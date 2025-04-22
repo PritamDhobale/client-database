@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { supabase } from "@/lib/supabaseClient"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -17,6 +18,27 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { PlusCircle } from "lucide-react"
+
+interface Client {
+  client_id: number
+  practice_name: string
+  primary_contact: string
+  email: string
+  phone: string
+  state: string
+  category: string
+  created_at: string
+  tax_id: string
+  npi: string
+  notes: string
+  street_address: string
+  zip_code: string
+  city: string
+  billing_contact_name: string
+  billing_contact_email: string
+  billing_contact_phone: string
+  status: string
+  }
 
 // List of US states for the dropdown
 const US_STATES = [
@@ -79,22 +101,23 @@ export function NewClientForm() {
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState({
-    practiceName: "",
+    practice_name: "",
     category: "",
-    primaryContact: "",
+    primary_contact: "",
     email: "",
     phone: "",
     state: "",
-    street: "",
+    street_address: "",
     city: "",
-    zipCode: "",
-    taxId: "",
+    zip_code: "",
+    tax_id: "",
     npi: "",
-    billingContactName: "",
-    billingContactEmail: "",
-    billingContactPhone: "",
+    billing_contact_name: "",
+    billing_contact_email: "",
+    billing_contact_phone: "",
     notes: "",
   })
+  
 
   const handleChange = (field: string, value: string) => {
     setFormData({
@@ -103,33 +126,58 @@ export function NewClientForm() {
     })
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setSaving(true)
-
-    // In a real app, this would be an API call to create the client
-    setTimeout(() => {
+    try {
+      const payload = {
+        ...formData,
+        zip_code: Number(formData.zip_code || 0),
+        tax_id: Number(formData.tax_id || 0),
+        created_at: new Date().toISOString(),
+        status: "active"
+      }
+  
+      console.log("Payload being sent:", payload)
+  
+      const { data, error } = await supabase
+        .from("Clients")
+        .insert([payload])
+        .select("*")
+  
+      if (error) {
+        console.error("❌ Failed to add client:", error)
+      } else {
+        console.log("✅ Client added:", data)
+        setOpen(false)
+        // Reset formData to blank values
+        setFormData({
+          practice_name: "",
+          category: "",
+          primary_contact: "",
+          email: "",
+          phone: "",
+          state: "",
+          street_address: "",
+          city: "",
+          zip_code: "",
+          tax_id: "",
+          npi: "",
+          billing_contact_name: "",
+          billing_contact_email: "",
+          billing_contact_phone: "",
+          notes: ""
+        })
+      }
+    } catch (err) {
+      console.error("Unexpected error while adding client:", err)
+    } finally {
       setSaving(false)
-      setOpen(false)
-      // Reset form
-      setFormData({
-        practiceName: "",
-        category: "",
-        primaryContact: "",
-        email: "",
-        phone: "",
-        state: "",
-        street: "",
-        city: "",
-        zipCode: "",
-        taxId: "",
-        npi: "",
-        billingContactName: "",
-        billingContactEmail: "",
-        billingContactPhone: "",
-        notes: "",
-      })
-    }, 1000)
+    }
   }
+  
+  
+  
+  
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -151,11 +199,11 @@ export function NewClientForm() {
             <h3 className="text-lg font-medium">Basic Information</h3>
 
             <div className="space-y-2">
-              <Label htmlFor="practiceName">Practice Name *</Label>
+              <Label htmlFor="practice_name">Practice Name *</Label>
               <Input
-                id="practiceName"
-                value={formData.practiceName}
-                onChange={(e) => handleChange("practiceName", e.target.value)}
+                id="practice_name"
+                value={formData.practice_name}
+                onChange={(e) => handleChange("practice_name", e.target.value)}
                 required
               />
             </div>
@@ -177,11 +225,11 @@ export function NewClientForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="primaryContact">Primary Contact *</Label>
+              <Label htmlFor="primary_contact">Primary Contact *</Label>
               <Input
-                id="primaryContact"
-                value={formData.primaryContact}
-                onChange={(e) => handleChange("primaryContact", e.target.value)}
+                id="primary_contact"
+                value={formData.primary_contact}
+                onChange={(e) => handleChange("primary_contact", e.target.value)}
                 required
               />
             </div>
@@ -211,7 +259,7 @@ export function NewClientForm() {
 
             <div className="space-y-2">
               <Label htmlFor="street">Street Address</Label>
-              <Input id="street" value={formData.street} onChange={(e) => handleChange("street", e.target.value)} />
+              <Input id="street" value={formData.street_address} onChange={(e) => handleChange("street_address", e.target.value)} />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -238,8 +286,8 @@ export function NewClientForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="zipCode">Zip Code</Label>
-              <Input id="zipCode" value={formData.zipCode} onChange={(e) => handleChange("zipCode", e.target.value)} />
+              <Label htmlFor="zip_code">Zip Code</Label>
+              <Input id="zip_code" value={formData.zip_code} onChange={(e) => handleChange("zip_code", e.target.value)} />
             </div>
           </div>
 
@@ -248,8 +296,8 @@ export function NewClientForm() {
             <h3 className="text-lg font-medium">Billing Information</h3>
 
             <div className="space-y-2">
-              <Label htmlFor="taxId">Tax ID</Label>
-              <Input id="taxId" value={formData.taxId} onChange={(e) => handleChange("taxId", e.target.value)} />
+              <Label htmlFor="tax_id">Tax ID</Label>
+              <Input id="tax_id" value={formData.tax_id} onChange={(e) => handleChange("tax_id", e.target.value)} />
             </div>
 
             <div className="space-y-2">
@@ -260,30 +308,30 @@ export function NewClientForm() {
             <Separator />
 
             <div className="space-y-2">
-              <Label htmlFor="billingContactName">Billing Contact Name</Label>
+              <Label htmlFor="billing_contact_name">Billing Contact Name</Label>
               <Input
-                id="billingContactName"
-                value={formData.billingContactName}
-                onChange={(e) => handleChange("billingContactName", e.target.value)}
+                id="billing_contact_name"
+                value={formData.billing_contact_name}
+                onChange={(e) => handleChange("billing_contact_name", e.target.value)}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="billingContactEmail">Billing Contact Email</Label>
+              <Label htmlFor="billing_contact_email">Billing Contact Email</Label>
               <Input
-                id="billingContactEmail"
+                id="billing_contact_email"
                 type="email"
-                value={formData.billingContactEmail}
-                onChange={(e) => handleChange("billingContactEmail", e.target.value)}
+                value={formData.billing_contact_email}
+                onChange={(e) => handleChange("billing_contact_email", e.target.value)}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="billingContactPhone">Billing Contact Phone</Label>
+              <Label htmlFor="billing_contact_phone">Billing Contact Phone</Label>
               <Input
-                id="billingContactPhone"
-                value={formData.billingContactPhone}
-                onChange={(e) => handleChange("billingContactPhone", e.target.value)}
+                id="billing_contact_phone"
+                value={formData.billing_contact_phone}
+                onChange={(e) => handleChange("billing_contact_phone", e.target.value)}
               />
             </div>
 

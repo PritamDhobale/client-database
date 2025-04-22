@@ -1,8 +1,8 @@
 "use client"
-
+import { supabase } from "@/lib/supabaseClient"
 import { useEffect, useState } from "react"
+import { useParams } from "next/navigation"
 import { useRouter } from "next/navigation"
-import { getClientById, type Client } from "@/data/clients"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -23,37 +23,85 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 
-export default function ClientDetailPage({ params }: { params: { id: string } }) {
+type Client = {
+  client_id: number
+  practice_name: string
+  primary_contact: string
+  email: string
+  phone: string
+  state: string
+  street_address: string
+  city: string
+  zip_code: string
+  tax_id: string
+  npi: string
+  billing_contact_name: string
+  billing_contact_email: string
+  billing_contact_phone: string
+  notes: string
+  created_at: string // optional in case it's auto-generated
+  status: string
+  category: string
+}
+
+
+// export default function ClientDetailPage({ params }: { params: { id: string } }) {
+  export default function ClientDetailPage(props: any) {
+    const params = useParams()
   const router = useRouter()
   const [client, setClient] = useState<Client | null>(null)
   const [loading, setLoading] = useState(true)
   const [showArchiveDialog, setShowArchiveDialog] = useState(false)
   const [showRestoreDialog, setShowRestoreDialog] = useState(false)
 
-  useEffect(() => {
-    // In a real app, this would be an API call
-    const fetchedClient = getClientById(params.id)
-    if (fetchedClient) {
-      setClient(fetchedClient)
+  const fetchClient = async () => {
+    const { data, error } = await supabase
+      .from("Clients")
+      .select("*")
+      .eq("client_id", params.id)
+      .single()
+  
+    if (error) {
+      console.error("Error fetching client", error)
+    } else {
+      setClient(data)
     }
     setLoading(false)
+  }
+  useEffect(() => {
+    fetchClient()
   }, [params.id])
+  
 
-  const handleArchiveClient = () => {
-    // In a real app, this would be an API call to archive the client
-    console.log(`Archiving client ${params.id}`)
-    setShowArchiveDialog(false)
-    // After successful archive, redirect to clients page
-    router.push("/clients")
+  const handleArchiveClient = async () => {
+    const { error } = await supabase
+      .from("Clients")
+      .update({ status: "inactive" })
+      .eq("client_id", client?.client_id)
+  
+    if (error) {
+      console.error("Failed to archive client:", error)
+    } else {
+      setShowArchiveDialog(false)
+      router.push("/clients")
+    }
   }
+  
 
-  const handleRestoreClient = () => {
-    // In a real app, this would be an API call to restore the client
-    console.log(`Restoring client ${params.id}`)
-    setShowRestoreDialog(false)
-    // After successful restore, redirect to clients page
-    router.push("/clients")
+  const handleRestoreClient = async () => {
+    const { error } = await supabase
+      .from("Clients")
+      .update({ status: "active" })
+      .eq("client_id", client?.client_id)
+  
+    if (error) {
+      console.error("Failed to restore client:", error)
+    } else {
+      setShowRestoreDialog(false)
+      router.push("/clients")
+    }
   }
+  
 
   if (loading) {
     return (
@@ -90,7 +138,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
           <AlertDialogHeader>
             <AlertDialogTitle>Archive Client</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to archive {client.practiceName}? The client will be marked as inactive but all data
+              Are you sure you want to archive {client.practice_name}? The client will be marked as inactive but all data
               will be preserved.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -109,7 +157,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
           <AlertDialogHeader>
             <AlertDialogTitle>Restore Client</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to restore {client.practiceName}? The client will be marked as active again.
+              Are you sure you want to restore {client.practice_name}? The client will be marked as active again.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -129,19 +177,19 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
             Back
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">{client.practiceName}</h1>
+            <h1 className="text-2xl font-bold">{client.practice_name}</h1>
             <div className="flex items-center gap-2 mt-1">
               <Badge variant={client.status === "active" ? "default" : "secondary"}>
                 {client.status === "active" ? "Active" : "Inactive"}
               </Badge>
-              <span className="text-sm text-gray-500">ID: {client.id}</span>
+              <span className="text-sm text-gray-500">ID: {client.client_id}</span>
               <span className="text-sm text-gray-500">•</span>
-              <span className="text-sm text-gray-500">Added {new Date(client.createdAt).toLocaleDateString()}</span>
+              <span className="text-sm text-gray-500">Added {new Date(client.created_at).toLocaleDateString()}</span>
             </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => router.push(`/clients/${client.id}/edit`)}>
+          <Button variant="outline" onClick={() => router.push(`/clients/${client.client_id}/edit`)}>
             <Edit className="mr-2 h-4 w-4" />
             Edit Client
           </Button>
@@ -188,7 +236,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm font-medium text-gray-500">Practice Name</p>
-                    <p>{client.practiceName}</p>
+                    <p>{client.practice_name}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-500">Category</p>
@@ -196,7 +244,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-500">Primary Contact</p>
-                    <p>{client.primaryContact}</p>
+                    <p>{client.primary_contact}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-500">Email</p>
@@ -216,9 +264,9 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
 
                 <div>
                   <p className="text-sm font-medium text-gray-500">Address</p>
-                  <p>{client.address.street}</p>
+                  <p>{client.street_address}</p>
                   <p>
-                    {client.address.city}, {client.state} {client.address.zipCode}
+                    {client.city}, {client.state} {client.zip_code}
                   </p>
                 </div>
               </CardContent>
@@ -234,7 +282,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm font-medium text-gray-500">Tax ID</p>
-                    <p>{client.taxId}</p>
+                    <p>{client.tax_id}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-500">NPI</p>
@@ -246,9 +294,9 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
 
                 <div>
                   <p className="text-sm font-medium text-gray-500">Billing Contact</p>
-                  <p>{client.billingInfo.contactName}</p>
-                  <p>{client.billingInfo.contactEmail}</p>
-                  <p>{client.billingInfo.contactPhone}</p>
+                  <p>{client.billing_contact_name}</p>
+                  <p>{client.billing_contact_email}</p>
+                  <p>{client.billing_contact_phone}</p>
                 </div>
               </CardContent>
             </Card>
@@ -274,8 +322,8 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                 <CardDescription>Client-related files and documents</CardDescription>
               </div>
               <FileUploadDialog
-                clientId={client.id}
-                clientName={client.practiceName}
+                clientId={client.client_id.toString()}
+                clientName={client.practice_name}
                 trigger={
                   <Button>
                     <UploadCloud className="mr-2 h-4 w-4" />
@@ -284,9 +332,10 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                 }
               />
             </CardHeader>
-            <CardContent>
-              <ClientDocuments clientId={client.id} documents={client.documents || []} />
-            </CardContent>
+            {/* <CardContent>
+              <ClientDocuments clientId={client.client_id.toString()}
+ documents={client.documents || []} />
+            </CardContent> */}
           </Card>
         </TabsContent>
 
@@ -303,7 +352,8 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
               </Button>
             </CardHeader>
             <CardContent>
-              <ClientAgreements clientId={client.id} />
+              <ClientAgreements clientId={client.client_id.toString()}
+ />
             </CardContent>
           </Card>
         </TabsContent>

@@ -24,24 +24,15 @@ import {
 } from "@/components/ui/alert-dialog"
 
 type Client = {
-  client_id: number
-  practice_name: string
-  primary_contact: string
-  email: string
-  phone: string
-  state: string
-  street_address: string
-  city: string
-  zip_code: string
-  tax_id: string
-  npi: string
-  billing_contact_name: string
-  billing_contact_email: string
-  billing_contact_phone: string
-  notes: string
-  created_at: string // optional in case it's auto-generated
-  client_status: string
-  category: string
+  client_id: string
+    practice_name: string
+    primary_contact_first_name: string
+    primary_contact_last_name: string
+    email: string
+    state: string
+    category_id: string
+    category_name: string
+    client_status: string
 }
 
 
@@ -57,7 +48,10 @@ type Client = {
   const fetchClient = async () => {
     const { data, error } = await supabase
       .from("Clients")
-      .select("*")
+      .select(`
+        *,
+        category:category_id (category_name)
+      `)
       .eq("client_id", params.id)
       .single()
   
@@ -68,6 +62,8 @@ type Client = {
     }
     setLoading(false)
   }
+  
+
   useEffect(() => {
     fetchClient()
   }, [params.id])
@@ -240,34 +236,76 @@ type Client = {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-500">Category</p>
-                    <p>{client.category}</p>
+                    <p>{client.category?.category_name}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Primary Contact</p>
-                    <p>{client.primary_contact}</p>
+                    <p className="text-sm font-medium text-gray-500">Primary Contact First Name</p>
+                    <p>{client.primary_contact_first_name}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Email</p>
-                    <p>{client.email}</p>
+                    <p className="text-sm font-medium text-gray-500">Primary Contact Last Name</p>
+                    <p>{client.primary_contact_last_name}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Phone</p>
-                    <p>{client.phone}</p>
+                    <p className="text-sm font-medium text-gray-500">Primary Contact Title</p>
+                    <p>{client.primary_contact_title}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">State</p>
-                    <p>{client.state}</p>
+                    <p className="text-sm font-medium text-gray-500">Primary Contact Email</p>
+                    <p>{client.primary_contact_email}</p>
                   </div>
-                </div>
-
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Primary Contact Phone</p>
+                    <p>{client.primary_contact_phone}</p>
+                  </div>
+                  </div>
+                <Separator />
+              
+              <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Admin Contact First Name</p>
+                <p>{client.admin_contact_first_name}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">Admin Contact Last Name</p>
+                <p>{client.admin_contact_last_name}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">Admin Contact Title</p>
+                <p>{client.admin_contact_title}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">Admin Contact Email</p>
+                <p>{client.admin_contact_email}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">Admin Contact Phone</p>
+                <p>{client.admin_contact_phone}</p>
+              </div>
+              </div>
                 <Separator />
 
+                <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Address</p>
-                  <p>{client.street_address}</p>
-                  <p>
-                    {client.city}, {client.state} {client.zip_code}
-                  </p>
+                  <p className="text-sm font-medium text-gray-500">Authorized Representative First Name</p>
+                  <p>{client.authorized_rep_first_name}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Authorized Representative Last Name</p>
+                  <p>{client.authorized_rep_last_name}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Authorized Representative Title</p>
+                  <p>{client.authorized_rep_title}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Authorized Representative Email</p>
+                  <p>{client.authorized_rep_email}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Authorized Representative Phone</p>
+                  <p>{client.authorized_rep_phone}</p>
+                </div>
                 </div>
               </CardContent>
             </Card>
@@ -275,29 +313,67 @@ type Client = {
             {/* Billing Information */}
             <Card>
               <CardHeader>
-                <CardTitle>Billing Information</CardTitle>
-                <CardDescription>Billing contact and identifiers</CardDescription>
+                {/* <CardTitle>Billing Information</CardTitle> */}
+                {/* <CardDescription>Billing contact and identifiers</CardDescription> */}
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Tax ID</p>
-                    <p>{client.tax_id}</p>
+                    <p className="text-sm font-medium text-gray-500">Street Address</p>
+                    <p>{client.street_address}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">NPI</p>
-                    <p>{client.npi}</p>
+                    <p className="text-sm font-medium text-gray-500">DBA</p>
+                    <p>{client.dba}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Code</p>
+                    <p>{client.code}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">SLA Number</p>
+                    <p>{client.sla_number}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Email</p>
+                    <p>{client.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">City</p>
+                    <p>{client.city}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Current EHR</p>
+                    <p>{client.current_ehr}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">State</p>
+                    <p>{client.state}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">State Of Formation</p>
+                    <p>{client.state_of_formation}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Zip Code</p>
+                    <p>{client.zip}</p>
                   </div>
                 </div>
 
                 <Separator />
 
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Billing Contact</p>
-                  <p>{client.billing_contact_name}</p>
-                  <p>{client.billing_contact_email}</p>
-                  <p>{client.billing_contact_phone}</p>
-                </div>
+                    <p className="text-sm font-medium text-gray-500">Website</p>
+                    <p>{client.website}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Type Of Entity</p>
+                    <p>{client.type_of_entity}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Zip Code</p>
+                    <p>{client.zip}</p>
+                  </div>
               </CardContent>
             </Card>
           </div>
@@ -332,10 +408,10 @@ type Client = {
                 }
               />
             </CardHeader>
-            {/* <CardContent>
+            <CardContent>
               <ClientDocuments clientId={client.client_id.toString()}
  documents={client.documents || []} />
-            </CardContent> */}
+            </CardContent>
           </Card>
         </TabsContent>
 

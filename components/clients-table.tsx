@@ -82,7 +82,10 @@
 
     useEffect(() => {
       const fetchClients = async () => {
-        const { data, error } = await supabase.from("Clients").select("*");
+        const { data, error } = await supabase.from("Clients") .select(`
+          *,
+          category:category_id (category_name)
+        `);
         if (error) {
           console.error("Error fetching clients:", error);
         } else {
@@ -206,7 +209,7 @@
     
       if (filters.email && !sanitizeValue(client.email).toString().toLowerCase().includes(filters.email.toLowerCase())) return false;
       if (filters.state && sanitizeValue(client.state).toString() !== filters.state) return false;
-      if (filters.category_id && sanitizeValue(client.category_id).toString() !== filters.category_id) return false;
+      if (filters.category_name && sanitizeValue(client.category_name).toString() !== filters.category_name) return false;
     
       return true;
     });
@@ -349,11 +352,11 @@ console.log("Filtered clients data:", filteredClients);
                           </div>
 
                           <div className="space-y-2">
-                            <label className="text-sm font-medium">Category ID</label>
+                            <label className="text-sm font-medium">Category</label>
                             <Input
                               placeholder="Filter by email"
-                              value={filters.category_id}
-                              onChange={(e) => updateFilter("category_id", e.target.value)}
+                              value={filters.category_name}
+                              onChange={(e) => updateFilter("category_name", e.target.value)}
                             />
                           </div>
                         </div>
@@ -432,8 +435,7 @@ console.log("Filtered clients data:", filteredClients);
   <TableCell className="hidden md:table-cell">{sanitizeValue(client.email)}</TableCell>
   <TableCell className="hidden md:table-cell">{sanitizeValue(client.primary_contact_phone)}</TableCell>
   <TableCell className="hidden md:table-cell">{sanitizeValue(client.state)}</TableCell>
-  <TableCell className="hidden md:table-cell">{sanitizeValue(client.category_id)}</TableCell>
-  <TableCell className="text-right">
+  <TableCell className="hidden md:table-cell">{sanitizeValue(client.category?.category_name || "Not Available")}</TableCell>  <TableCell className="text-right">
 
                       <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                         <FileUploadDialog clientId={client.client_id} clientName={client.practice_name} />

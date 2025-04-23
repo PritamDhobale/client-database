@@ -1,9 +1,9 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
+import { supabase } from "@/lib/supabaseClient"; // Import supabase client
 import { Eye, Download, FileText, FileImage, FileArchive, File, Search, X } from "lucide-react"
 import {
   Dialog,
@@ -18,22 +18,40 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface Document {
-  name: string
-  type: string
-  uploadedAt: string
+  file_name: string
+  file_url: string
+  created_at: string
   size: string
 }
 
 interface FileViewerDialogProps {
   clientId: string
   clientName: string
-  documents: Document[]
   trigger?: React.ReactNode
 }
 
-export function FileViewerDialog({ clientId, clientName, documents, trigger }: FileViewerDialogProps) {
+export function FileViewerDialog({ clientId, clientName, trigger }: FileViewerDialogProps) {
   const [open, setOpen] = useState(false)
+  const [documents, setDocuments] = useState<Document[]>([]) // State to store documents
   const [searchTerm, setSearchTerm] = useState("")
+
+  // Fetch documents for the client
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      const { data, error } = await supabase
+        .from("client_documents")
+        .select("file_name, file_url, created_at, size")
+        .eq("client_id", clientId)
+
+      if (error) {
+        console.error("Error fetching documents:", error)
+      } else {
+        setDocuments(data)
+      }
+    }
+
+    fetchDocuments()
+  }, [clientId])
 
   // Function to determine the icon based on document type
   const getDocumentIcon = (type: string) => {
@@ -51,7 +69,12 @@ export function FileViewerDialog({ clientId, clientName, documents, trigger }: F
     }
   }
 
-  const filteredDocuments = documents.filter((doc) => doc.name.toLowerCase().includes(searchTerm.toLowerCase()))
+  const filteredDocuments = documents.filter((doc) => doc.file_name.toLowerCase().includes(searchTerm.toLowerCase()))
+
+  // Download document handler
+  const handleDownload = (fileUrl: string) => {
+    window.open(fileUrl, "_blank") // Opens the file URL in a new tab
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -116,14 +139,18 @@ export function FileViewerDialog({ clientId, clientName, documents, trigger }: F
                 {filteredDocuments.map((doc, index) => (
                   <TableRow key={index}>
                     <TableCell className="flex items-center">
-                      {getDocumentIcon(doc.type)}
-                      <span className="ml-2">{doc.name}</span>
+                      {getDocumentIcon(doc.file_name.split(".").pop()!)} {/* Icon based on file type */}
+                      <span className="ml-2">{doc.file_name}</span>
                     </TableCell>
-                    <TableCell>{doc.type}</TableCell>
-                    <TableCell>{new Date(doc.uploadedAt).toLocaleDateString()}</TableCell>
+                    <TableCell>{doc.file_name.split(".").pop()}</TableCell>
+                    <TableCell>{new Date(doc.created_at).toLocaleDateString()}</TableCell>
                     <TableCell>{doc.size}</TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="sm">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDownload(doc.file_url)} // Download action
+                      >
                         <Download className="h-4 w-4 mr-1" />
                         Download
                       </Button>

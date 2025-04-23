@@ -161,7 +161,7 @@ export function NewClientForm() {
         ...formData,
         zip: Number(formData.zip || 0),
         created_at: new Date().toISOString(),
-        client_status: "active"
+        // client_status: "active"
       }
   
       console.log("Payload being sent:", payload)

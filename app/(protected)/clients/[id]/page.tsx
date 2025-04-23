@@ -40,7 +40,7 @@ type Client = {
   billing_contact_phone: string
   notes: string
   created_at: string // optional in case it's auto-generated
-  status: string
+  client_status: string
   category: string
 }
 
@@ -76,7 +76,7 @@ type Client = {
   const handleArchiveClient = async () => {
     const { error } = await supabase
       .from("Clients")
-      .update({ status: "inactive" })
+      .update({ client_status: "inactive" })
       .eq("client_id", client?.client_id)
   
     if (error) {
@@ -91,7 +91,7 @@ type Client = {
   const handleRestoreClient = async () => {
     const { error } = await supabase
       .from("Clients")
-      .update({ status: "active" })
+      .update({ client_status: "active" })
       .eq("client_id", client?.client_id)
   
     if (error) {
@@ -179,8 +179,8 @@ type Client = {
           <div>
             <h1 className="text-2xl font-bold">{client.practice_name}</h1>
             <div className="flex items-center gap-2 mt-1">
-              <Badge variant={client.status === "active" ? "default" : "secondary"}>
-                {client.status === "active" ? "Active" : "Inactive"}
+              <Badge variant={client.client_status === "active" ? "default" : "secondary"}>
+                {client.client_status === "active" ? "Active" : "Inactive"}
               </Badge>
               <span className="text-sm text-gray-500">ID: {client.client_id}</span>
               <span className="text-sm text-gray-500">•</span>
@@ -193,7 +193,7 @@ type Client = {
             <Edit className="mr-2 h-4 w-4" />
             Edit Client
           </Button>
-          {client.status === "active" ? (
+          {client.client_status === "active" ? (
             <Button
               variant="outline"
               className="text-red-600 hover:text-red-700"

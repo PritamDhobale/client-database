@@ -1,14 +1,14 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { RefreshCw } from "lucide-react"
+
 import {
   Dialog,
   DialogContent,
@@ -40,21 +40,28 @@ export function RenewAgreementDialog({
   const [term, setTerm] = useState("1 year")
   const [processing, setProcessing] = useState(false)
 
-  // Calculate default start date (day after current end date)
   const calculateDefaultStartDate = () => {
-    const endDate = new Date(currentEndDate)
-    const nextDay = new Date(endDate)
-    nextDay.setDate(endDate.getDate() + 1)
-    return nextDay.toISOString().split("T")[0]
-  }
-
-  // Reset form when dialog opens
-  const handleOpenChange = (newOpen: boolean) => {
-    if (newOpen) {
-      setRenewalType("continue")
-      setStartDate(calculateDefaultStartDate())
-      setTerm("1 year")
+    // Check if currentEndDate is valid
+    if (!currentEndDate || isNaN(new Date(currentEndDate).getTime())) {
+      console.error("No valid current end date available. Using today's date as fallback.");
+      return new Date().toISOString().split("T")[0];  // Return today's date as a fallback
     }
+    
+    const endDate = new Date(currentEndDate);
+    const nextDay = new Date(endDate);
+    nextDay.setDate(endDate.getDate() + 1);
+    return nextDay.toISOString().split("T")[0];
+  };
+  
+
+  useEffect(() => {
+    // Reset form when dialog opens
+    setStartDate(calculateDefaultStartDate())
+    setRenewalType("continue")
+    setTerm("1 year")
+  }, [open])
+
+  const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen)
   }
 

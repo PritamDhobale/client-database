@@ -55,6 +55,7 @@
     email: string
     state: string
     category_id: string
+    category_name: string
     client_status: string
   }
   
@@ -71,6 +72,7 @@
       email: "",
       state: "",
       category_id: "",
+      category_name: "",
       client_status:"",
     })    
     const [activeFilters, setActiveFilters] = useState<string[]>([])
@@ -133,6 +135,7 @@
         email: "",
         state: "",
         category_id: "",
+        category_name: "",
         client_status: "",
       })
       setActiveFilters([])
@@ -444,7 +447,7 @@ console.log("Filtered clients data:", filteredClients);
                         <FileViewerDialog
                           clientId={client.client_id}
                           clientName={client.practice_name}
-                          documents={client.documents || []}
+                          // documents={client.documents || []}
                         />
 
                         <DropdownMenu>

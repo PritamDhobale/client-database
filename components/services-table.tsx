@@ -1,21 +1,22 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import {
   MoreHorizontal,
+  ChevronDown,
+  ChevronRight,
   Search,
   FileEdit,
   Download,
-  ChevronDown,
-  ChevronRight,
-  Check,
+  Trash2,
   X,
   Filter,
-  Trash2,
+  Check,
 } from "lucide-react"
+import React from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,105 +32,111 @@ import { ExportServicesDialog } from "@/components/export-services-dialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Card, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+import { supabase } from "@/lib/supabaseClient"
+import { Separator } from "@radix-ui/react-dropdown-menu"
 
-// Mock data
-const initialServices = [
-  {
-    id: "SV001",
-    clientId: "CL001",
-    clientName: "Sunshine Medical Group",
-    serviceName: "Medical Billing",
-    rate: "$25 per claim",
-    minimumCharge: "$500 per month",
-    nppStatus: true,
-    notes: "Includes claim submission, follow-up, and payment posting.",
-  },
-  {
-    id: "SV002",
-    clientId: "CL001",
-    clientName: "Sunshine Medical Group",
-    serviceName: "Coding Review",
-    rate: "$45 per hour",
-    minimumCharge: "$200 per month",
-    nppStatus: true,
-    notes: "Quarterly audit of coding practices.",
-  },
-  {
-    id: "SV003",
-    clientId: "CL002",
-    clientName: "Westside Healthcare",
-    serviceName: "Medical Billing",
-    rate: "$22 per claim",
-    minimumCharge: "$450 per month",
-    nppStatus: true,
-    notes: "Includes claim submission and payment posting.",
-  },
-  {
-    id: "SV004",
-    clientId: "CL002",
-    clientName: "Westside Healthcare",
-    serviceName: "Credentialing",
-    rate: "$500 per provider",
-    minimumCharge: "N/A",
-    nppStatus: false,
-    notes: "One-time fee per provider.",
-  },
-  {
-    id: "SV005",
-    clientId: "CL003",
-    clientName: "Northpark Physicians",
-    serviceName: "Medical Billing",
-    rate: "$28 per claim",
-    minimumCharge: "$600 per month",
-    nppStatus: true,
-    notes: "Full-service billing including denial management.",
-  },
-  {
-    id: "SV006",
-    clientId: "CL003",
-    clientName: "Northpark Physicians",
-    serviceName: "AR Management",
-    rate: "8% of collections",
-    minimumCharge: "$300 per month",
-    nppStatus: true,
-    notes: "Focused on accounts over 60 days.",
-  },
-]
 
-// Get unique values for filter options
-const getUniqueValues = (field: string) => {
-  const values = [...new Set(initialServices.map((service: any) => service[field]))]
-  return values.sort()
+interface ServiceDetails {
+  client_service_id: string;
+  clientId: string;
+  practiceName: string;
+  services: {
+    serviceName: string;
+    rate: string;
+    nppStatus: boolean;
+    notes: string;
+  }[];
+  rate: string;
+  minimum: string;
+  nppStatus: boolean;
+  notes: string;
 }
 
+
 export function ServicesTable() {
-  const [services, setServices] = useState(initialServices)
+  const [services, setServices] = useState<ServiceDetails[]>([])
   const [searchTerm, setSearchTerm] = useState("")
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [serviceToDelete, setServiceToDelete] = useState<string | null>(null);
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({})
-  const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [filters, setFilters] = useState({
     clientId: "",
-    clientName: "",
+    practiceName: "",
     serviceName: "",
     nppStatus: "",
   })
   const [activeFilters, setActiveFilters] = useState<string[]>([])
-  const [serviceToDelete, setServiceToDelete] = useState<string | null>(null)
 
-  // Get unique values for dropdowns
-  const clientIds = getUniqueValues("clientId")
-  const clientNames = getUniqueValues("clientName")
-  const serviceNames = getUniqueValues("serviceName")
+  useEffect(() => {
+    const fetchServices = async () => {
+      // Fetch the data from the client_services table
+      const { data: clientServices, error: serviceError } = await supabase
+        .from("client_services")
+        .select(`
+          client_service_id, 
+          client_id, 
+          id, 
+          services(service_name), 
+          rate, 
+          minimum, 
+          npp_status, 
+          notes
+        `);
+    
+      if (serviceError) {
+        console.error("Error fetching services:", serviceError);
+        return;
+      }
+    
+      // Now fetch the practice_name from the Clients table using the client_id
+      const clientIds = clientServices.map(service => service.client_id);
+      const { data: clients, error: clientError } = await supabase
+        .from("Clients")
+        .select("client_id, practice_name")
+        .in("client_id", clientIds);  // Use the in() method to fetch all clients that match the client_ids
+    
+      if (clientError) {
+        console.error("Error fetching clients:", clientError);
+        return;
+      }
+    
+      // Map over the client_services data and add practice_name by matching client_id
+      const formattedData = clientServices.map((service: any) => {
+        const client = clients.find(client => client.client_id === service.client_id)
+        return {
+          client_service_id: service.client_service_id,
+          clientId: service.client_id,
+          practiceName: client ? client.practice_name : "Unknown",
+          services: [{
+            serviceName: service.services?.[0]?.service_name || "Unknown",
+            rate: service.rate,
+            nppStatus: service.npp_status,
+            notes: service.notes,
+          }],
+          rate: service.rate,
+          minimum: service.minimum,
+          nppStatus: service.npp_status,
+          notes: service.notes,
+        };
+      });
+      
+      
+    
+      // Update the state with the formatted data
+      setServices(formattedData);
+    };
+    
+    
+  
+    fetchServices();  // Call the function to fetch the data
+  }, []);
+  
+  
+  
+  
+  
+  
+
 
   const toggleRow = (id: string) => {
     setExpandedRows((prev) => ({
@@ -138,7 +145,29 @@ export function ServicesTable() {
     }))
   }
 
-  // Update filter
+  // Group the services by clientId
+const groupedServices = services.reduce((acc: Record<string, any>, service: any) => {
+  const client_id = service.clientId;
+
+  if (!acc[client_id]) {
+    acc[client_id] = {
+      clientId: client_id,
+      practiceName: service.practiceName || "Unknown",
+      services: [],
+    };
+  }
+
+  acc[client_id].services.push(service);
+
+  return acc;
+}, {});
+
+const handleSaveService = (updatedService: any) => {
+  setServices((prev) =>
+    prev.map((service) => (service.client_service_id === updatedService.client_service_id ? updatedService : service))
+  );
+};
+
   const updateFilter = (field: string, value: string) => {
     setFilters((prev) => ({ ...prev, [field]: value }))
 
@@ -149,85 +178,28 @@ export function ServicesTable() {
     }
   }
 
-  // Clear all filters
-  const clearAllFilters = () => {
-    setFilters({
-      clientId: "",
-      clientName: "",
-      serviceName: "",
-      nppStatus: "",
-    })
-    setActiveFilters([])
-    setSearchTerm("")
-  }
-
-  // Remove a specific filter
-  const removeFilter = (field: string) => {
-    setFilters((prev) => ({ ...prev, [field]: "" }))
-    setActiveFilters((prev) => prev.filter((f) => f !== field))
-  }
-
-  const handleSaveService = (updatedService: any) => {
-    setServices((prev) => prev.map((service) => (service.id === updatedService.id ? updatedService : service)))
-  }
-
-  const handleAddService = (newService: any) => {
-    setServices((prev) => [...prev, newService])
-  }
-
-  const handleDeleteService = () => {
-    if (serviceToDelete) {
-      setServices((prev) => prev.filter((service) => service.id !== serviceToDelete))
-      setServiceToDelete(null)
-    }
-  }
-
-  const handleExport = (columns: string[], format: string) => {
-    // In a real app, this would be an API call to generate the export
-    console.log(`Exporting services with columns: ${columns.join(", ")} in format: ${format}`)
-  }
-
   const filteredServices = services.filter((service) => {
-    // Apply search term if present
-    if (
-      searchTerm &&
-      !Object.values(service).some((value) => String(value).toLowerCase().includes(searchTerm.toLowerCase()))
-    ) {
-      return false
+    if (searchTerm && !Object.values(service).some((value) => String(value).toLowerCase().includes(searchTerm.toLowerCase()))) {
+      return false;
     }
-
-    // Apply specific filters
-    if (filters.clientId && service.clientId !== filters.clientId) return false
-    if (filters.clientName && service.clientName !== filters.clientName) return false
-    if (filters.serviceName && service.serviceName !== filters.serviceName) return false
-    if (filters.nppStatus) {
-      const status = filters.nppStatus === "active" ? true : false
-      if (service.nppStatus !== status) return false
-    }
-
-    return true
-  })
+  
+    if (filters.clientId && service.clientId !== filters.clientId) return false;
+    if (filters.practiceName && service.practiceName !== filters.practiceName) return false;
+  
+    // Access serviceName from the first service in the array or iterate over all services
+    if (filters.serviceName && !service.services.some(s => s.serviceName === filters.serviceName)) return false;
+  
+    // if (filters.nppStatus) {
+    //   const status = filters.nppStatus === "active" ? true : false;
+    //   if (service.nppStatus !== status) return false;
+    // }
+  
+    return true;
+  });
+  
 
   return (
     <div className="space-y-4">
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!serviceToDelete} onOpenChange={(open) => !open && setServiceToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Service</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this service? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteService} className="bg-red-600 hover:bg-red-700">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       {/* Search and Filter Bar */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div className="relative w-full sm:max-w-sm">
@@ -243,7 +215,11 @@ export function ServicesTable() {
         <div className="flex items-center gap-2">
           <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsFilterOpen((prev) => !prev)} // Toggle visibility of filters
+                className="flex items-center gap-2"
+              >
                 <Filter className="h-4 w-4" />
                 <span>Filters</span>
                 {activeFilters.length > 0 && (
@@ -253,15 +229,13 @@ export function ServicesTable() {
                 )}
               </Button>
             </PopoverTrigger>
+
             <PopoverContent className="w-[340px] p-0" align="end">
               <Card>
                 <CardContent className="p-3">
                   <div className="space-y-4 py-2">
                     <div className="flex items-center justify-between">
                       <h3 className="font-medium">Filter Services</h3>
-                      <Button variant="ghost" size="sm" onClick={clearAllFilters} className="h-8 px-2 text-xs">
-                        Clear all
-                      </Button>
                     </div>
 
                     <div className="space-y-4">
@@ -274,9 +248,9 @@ export function ServicesTable() {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="all">All Client IDs</SelectItem>
-                              {clientIds.map((id) => (
-                                <SelectItem key={id} value={id}>
-                                  {id}
+                              {services.map((service) => (
+                                <SelectItem key={service.clientId} value={service.clientId}>
+                                  {service.clientId}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -284,19 +258,19 @@ export function ServicesTable() {
                         </div>
 
                         <div className="space-y-2">
-                          <label className="text-sm font-medium">Client Name</label>
+                          <label className="text-sm font-medium">Practice Name</label>
                           <Select
-                            value={filters.clientName}
-                            onValueChange={(value) => updateFilter("clientName", value)}
+                            value={filters.practiceName}
+                            onValueChange={(value) => updateFilter("practiceName", value)}
                           >
                             <SelectTrigger>
-                              <SelectValue placeholder="Select client name" />
+                              <SelectValue placeholder="Select practice name" />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="all">All Clients</SelectItem>
-                              {clientNames.map((name) => (
-                                <SelectItem key={name} value={name}>
-                                  {name}
+                              {services.map((service) => (
+                                <SelectItem key={service.practiceName} value={service.practiceName}>
+                                  {service.practiceName}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -304,24 +278,27 @@ export function ServicesTable() {
                         </div>
 
                         <div className="space-y-2">
-                          <label className="text-sm font-medium">Service Name</label>
-                          <Select
-                            value={filters.serviceName}
-                            onValueChange={(value) => updateFilter("serviceName", value)}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select service name" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all">All Services</SelectItem>
-                              {serviceNames.map((name) => (
-                                <SelectItem key={name} value={name}>
-                                  {name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
+  <label className="text-sm font-medium">Service Name</label>
+  <Select
+    value={filters.serviceName}
+    onValueChange={(value) => updateFilter("serviceName", value)}
+  >
+    <SelectTrigger>
+      <SelectValue placeholder="Select service name" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="all">All Services</SelectItem>
+      {services.map((service) => (
+        service.services.map((subService) => (
+          <SelectItem key={subService.serviceName} value={subService.serviceName}>
+            {subService.serviceName}
+          </SelectItem>
+        ))
+      ))}
+    </SelectContent>
+  </Select>
+</div>
+
 
                         <div className="space-y-2">
                           <label className="text-sm font-medium">NPP Status</label>
@@ -350,166 +327,108 @@ export function ServicesTable() {
             </PopoverContent>
           </Popover>
 
-          <NewServiceDialog onAdd={handleAddService} />
-          <ExportServicesDialog onExport={handleExport} />
+          <NewServiceDialog onAdd={(newService) => setServices([...services, newService])} />
+          <ExportServicesDialog onExport={(columns, format) => console.log(`Exporting services with columns: ${columns}, format: ${format}`)} />
         </div>
       </div>
-
-      {/* Active Filters Display */}
-      {activeFilters.length > 0 && (
-        <div className="flex flex-wrap gap-2 items-center">
-          <span className="text-sm text-gray-500">Active filters:</span>
-          {activeFilters.map((filter) => (
-            <Badge key={filter} variant="outline" className="flex items-center gap-1 bg-primary/5">
-              <span className="capitalize">{filter.replace(/([A-Z])/g, " $1").trim()}</span>:{" "}
-              {filter === "nppStatus" ? (filters[filter] === "active" ? "Active" : "Inactive") : filters[filter]}
-              <button onClick={() => removeFilter(filter)} className="ml-1 rounded-full hover:bg-gray-200 p-0.5">
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
-          ))}
-          <Button variant="ghost" size="sm" onClick={clearAllFilters} className="h-7 px-2 text-xs">
-            Clear all
-          </Button>
-        </div>
-      )}
 
       <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead className="w-10"></TableHead>
-              <TableHead>ID</TableHead>
-              <TableHead>Client</TableHead>
-              <TableHead>Service</TableHead>
-              <TableHead className="hidden md:table-cell">Rate</TableHead>
-              <TableHead className="hidden md:table-cell">NPP Status</TableHead>
+              <TableHead>Client ID</TableHead>
+              <TableHead>Practice Name</TableHead>
+          
+              <TableHead>Services</TableHead>
+              <TableHead>NPP Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredServices.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-6 text-gray-500">
-                  No services found
-                </TableCell>
-              </TableRow>
+  {Object.values(groupedServices).map((clientData: any) => (
+    <React.Fragment key={clientData.clientId}>
+      <TableRow className="cursor-pointer hover:bg-gray-50">
+        <TableCell>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleRow(clientData.clientId)}>
+            {expandedRows[clientData.clientId] ? (
+              <ChevronDown className="h-4 w-4" />
             ) : (
-              filteredServices.map((service) => (
-                <>
-                  <TableRow
-                    key={service.id}
-                    className="cursor-pointer hover:bg-gray-50"
-                    onClick={() => toggleRow(service.id)}
-                  >
-                    <TableCell>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        {expandedRows[service.id] ? (
-                          <ChevronDown className="h-4 w-4" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </TableCell>
-                    <TableCell className="font-medium">{service.id}</TableCell>
-                    <TableCell>
-                      <div>{service.clientName}</div>
-                      <div className="text-xs text-gray-500">{service.clientId}</div>
-                    </TableCell>
-                    <TableCell>{service.serviceName}</TableCell>
-                    <TableCell className="hidden md:table-cell">{service.rate}</TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      {service.nppStatus ? (
-                        <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200">
-                          <Check className="h-3 w-3 mr-1" /> Active
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-200">
-                          <X className="h-3 w-3 mr-1" /> Inactive
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                        <EditServiceDialog service={service} onSave={handleSaveService} />
-
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <span className="sr-only">Open menu</span>
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onClick={() => setExpandedRows((prev) => ({ ...prev, [service.id]: true }))}
-                            >
-                              <ChevronDown className="mr-2 h-4 w-4" />
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => {}}>
-                              <FileEdit className="mr-2 h-4 w-4" />
-                              Edit Service
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => {}}>
-                              <Download className="mr-2 h-4 w-4" />
-                              Export Details
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-red-600" onClick={() => setServiceToDelete(service.id)}>
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete Service
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                  {expandedRows[service.id] && (
-                    <TableRow>
-                      <TableCell colSpan={7} className="bg-gray-50 p-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <h4 className="font-medium mb-2">Service Details</h4>
-                            <div className="space-y-2 text-sm">
-                              <div className="grid grid-cols-2 gap-2">
-                                <div className="text-gray-500">Service Name:</div>
-                                <div>{service.serviceName}</div>
-                              </div>
-                              <div className="grid grid-cols-2 gap-2">
-                                <div className="text-gray-500">Rate:</div>
-                                <div>{service.rate}</div>
-                              </div>
-                              <div className="grid grid-cols-2 gap-2">
-                                <div className="text-gray-500">Minimum Charge:</div>
-                                <div>{service.minimumCharge}</div>
-                              </div>
-                              <div className="grid grid-cols-2 gap-2">
-                                <div className="text-gray-500">NPP Status:</div>
-                                <div>{service.nppStatus ? "Active" : "Inactive"}</div>
-                              </div>
-                            </div>
-                          </div>
-                          <div>
-                            <h4 className="font-medium mb-2">Notes</h4>
-                            <div className="text-sm">{service.notes}</div>
-                          </div>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </>
-              ))
+              <ChevronRight className="h-4 w-4" />
             )}
-          </TableBody>
-        </Table>
-      </div>
+          </Button>
+        </TableCell>
+        <TableCell>{clientData.clientId}</TableCell>
+        <TableCell>{clientData.practiceName}</TableCell>
+        <TableCell>-</TableCell>
+        <TableCell className="hidden md:table-cell">
+          {clientData.services.map((service: any) => (
+            <div key={service.client_service_id}>
+              {service.nppStatus}
+            </div>
+          ))}
+        </TableCell>
+        <TableCell className="text-right">
+          <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+            <EditServiceDialog service={clientData.services[0]} onSave={handleSaveService} />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0">
+                  <span className="sr-only">Open menu</span>
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  <FileEdit className="mr-2 h-4 w-4" />
+                  Edit Service
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Download className="mr-2 h-4 w-4" />
+                  Export Details
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </TableCell>
+      </TableRow>
 
-      {/* Results Count */}
-      <div className="text-sm text-gray-500">
-        Showing {filteredServices.length} of {services.length} services
+      {expandedRows[clientData.clientId] && (
+        <TableRow key={`${clientData.clientId}-expanded`}>
+          <TableCell colSpan={7} className="bg-gray-50 p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <h4 className="font-medium mb-2">Service Details</h4>
+                <div className="space-y-2 text-sm">
+                  {clientData.services.map((service: any) => (
+                    <div key={service.client_service_id} className="grid grid-cols-2 gap-2">
+                      <div className="text-gray-500">Service Name:</div>
+                      <div>{clientData.serviceName}</div>
+                      <div className="text-gray-500">Rate:</div>
+                      <div>{service.rate}</div>
+                      <div className="text-gray-500">NPP Status:</div>
+                      <div>{service.nppStatus}</div>
+                      <div className="text-gray-500">Notes:</div>
+                      <div>{service.notes}</div>
+                      <p>------------------------------------------------------</p>
+                      <Separator />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </TableCell>
+        </TableRow>
+      )}
+    </React.Fragment>
+  ))}
+</TableBody>
+
+
+
+        </Table>
       </div>
     </div>
   )

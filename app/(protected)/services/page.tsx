@@ -1,4 +1,5 @@
 import { ServicesTable } from "@/components/services-table"
+import { supabase } from "@/lib/supabaseClient"
 
 export default function ServicesPage() {
   return (

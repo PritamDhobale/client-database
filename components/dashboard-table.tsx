@@ -1,72 +1,64 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { supabase } from "@/lib/supabaseClient"
+import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
 import { MoreHorizontal, Search, ChevronDown, FileEdit, Trash2, Eye } from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
-const clients = [
-  {
-    id: "CL001",
-    practiceName: "Sunshine Medical Group",
-    primaryContact: "Dr. Sarah Johnson",
-    email: "sjohnson@sunshinemedical.com",
-    state: "CA",
-    status: "active",
-  },
-  {
-    id: "CL002",
-    practiceName: "Westside Healthcare",
-    primaryContact: "Dr. Michael Chen",
-    email: "mchen@westsidehc.com",
-    state: "NY",
-    status: "active",
-  },
-  {
-    id: "CL003",
-    practiceName: "Northpark Physicians",
-    primaryContact: "Dr. Robert Williams",
-    email: "rwilliams@northparkphys.com",
-    state: "TX",
-    status: "active",
-  },
-  {
-    id: "CL004",
-    practiceName: "Eastside Medical Center",
-    primaryContact: "Dr. Emily Rodriguez",
-    email: "erodriguez@eastsidemc.com",
-    state: "FL",
-    status: "inactive",
-  },
-  {
-    id: "CL005",
-    practiceName: "Valley Health Partners",
-    primaryContact: "Dr. James Smith",
-    email: "jsmith@valleyhp.com",
-    state: "AZ",
-    status: "active",
-  },
-]
+// Sanitize function to handle missing or default values (N/A)
+const sanitizeValue = (value: unknown): string => {
+  if (value === null || value === undefined || value === "N/A" || value === "") {
+    return "Not Available";  // You can return an empty string or another default value
+  }
+  return String(value); // Convert any value to string
+}
+
+// Fetch recent clients from Supabase (last 5)
+const fetchRecentClients = async () => {
+  const { data, error } = await supabase
+    .from("Clients")
+    .select("*")
+    .order("created_at", { ascending: false })  // Sort by created date, most recent first
+    .limit(5)
+
+  if (error) {
+    console.error("Error fetching recent clients:", error)
+    return []
+  }
+  return data || []
+}
 
 export function DashboardTable() {
+  const router = useRouter()
+  const [clients, setClients] = useState<any[]>([])
   const [searchTerm, setSearchTerm] = useState("")
 
+  // Fetch recent clients on page load
+  useEffect(() => {
+    const loadClients = async () => {
+      const recentClients = await fetchRecentClients()
+      setClients(recentClients)
+    }
+    loadClients()
+  }, [])
+
+  // Filter clients based on the search term
   const filteredClients = clients.filter(
     (client) =>
-      client.practiceName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.primaryContact.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.id.toLowerCase().includes(searchTerm.toLowerCase()),
+      client.practice_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.primary_contact_first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.id.toLowerCase().includes(searchTerm.toLowerCase())
   )
+
+  // Handle clicking "View All" button to navigate to clients page
+  const handleViewAll = () => {
+    router.push("/clients")  // Adjust URL for your clients page
+  }
 
   return (
     <div className="space-y-4">
@@ -80,7 +72,7 @@ export function DashboardTable() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <Button>
+        <Button onClick={handleViewAll}>
           View All
           <ChevronDown className="ml-2 h-4 w-4" />
         </Button>
@@ -96,48 +88,50 @@ export function DashboardTable() {
               <TableHead className="hidden md:table-cell">Email</TableHead>
               <TableHead className="hidden md:table-cell">State</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              {/* <TableHead className="text-right">Actions</TableHead> */}
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredClients.map((client) => (
               <TableRow key={client.id}>
                 <TableCell className="font-medium">{client.id}</TableCell>
-                <TableCell>{client.practiceName}</TableCell>
-                <TableCell className="hidden md:table-cell">{client.primaryContact}</TableCell>
-                <TableCell className="hidden md:table-cell">{client.email}</TableCell>
-                <TableCell className="hidden md:table-cell">{client.state}</TableCell>
+                <TableCell>{client.practice_name}</TableCell>
+                <TableCell className="hidden md:table-cell">
+                  {`${sanitizeValue(client.primary_contact_title)} ${sanitizeValue(client.primary_contact_first_name)} ${sanitizeValue(client.primary_contact_last_name)}`}
+                </TableCell>
+                <TableCell className="hidden md:table-cell">{sanitizeValue(client.email)}</TableCell>
+                <TableCell className="hidden md:table-cell">{sanitizeValue(client.state)}</TableCell>
                 <TableCell>
-                  <Badge variant={client.status === "active" ? "default" : "secondary"}>
-                    {client.status === "active" ? "Active" : "Inactive"}
+                  <Badge variant={client.client_status === "active" ? "default" : "secondary"}>
+                    {client.client_status === "active" ? "Active" : "Inactive"}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-right">
+                {/* <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" className="h-8 w-8 p-0">
                         <span className="sr-only">Open menu</span>
-                        <MoreHorizontal className="h-4 w-4" />
+                        <ChevronDown className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => router.push(`/clients/${client.id}`)}>
                         <Eye className="mr-2 h-4 w-4" />
                         View Details
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => router.push(`/clients/${client.id}/edit`)}>
                         <FileEdit className="mr-2 h-4 w-4" />
                         Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="text-red-600">
+                      <DropdownMenuItem className="text-red-600" onClick={() => alert("Archive client")}>
                         <Trash2 className="mr-2 h-4 w-4" />
                         Archive
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
-                </TableCell>
+                </TableCell> */}
               </TableRow>
             ))}
           </TableBody>

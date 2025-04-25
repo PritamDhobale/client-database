@@ -1,14 +1,11 @@
-"use client"
-
-import type React from "react"
-
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Switch } from "@/components/ui/switch"
-import { FileEdit } from "lucide-react"
+import type React from "react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { FileEdit } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -17,49 +14,62 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 
 interface ServiceDetails {
-  id: string
-  clientId: string
-  clientName: string
-  serviceName: string
-  rate: string
-  minimumCharge: string
-  nppStatus: boolean
-  notes: string
+  client_service_id: string;
+  clientId: string;
+  practiceName: string;
+  services: {
+    serviceName: string;
+    rate: string;
+    nppStatus: boolean;
+  }[]; // Ensure services is an array of objects with these properties
+  rate: string;
+  minimum: string;
+  nppStatus: boolean;
+  notes: string;
 }
 
 interface EditServiceDialogProps {
-  service: ServiceDetails
-  trigger?: React.ReactNode
-  onSave?: (service: ServiceDetails) => void
+  service: ServiceDetails;
+  trigger?: React.ReactNode;
+  onSave?: (service: ServiceDetails) => void;
 }
 
 export function EditServiceDialog({ service, trigger, onSave }: EditServiceDialogProps) {
-  const [open, setOpen] = useState(false)
-  const [formData, setFormData] = useState<ServiceDetails>({ ...service })
-  const [saving, setSaving] = useState(false)
+  const [open, setOpen] = useState(false);
+  const [formData, setFormData] = useState<ServiceDetails>({ ...service });
+  const [saving, setSaving] = useState(false);
 
-  const handleChange = (field: keyof ServiceDetails, value: string | boolean) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }))
-  }
+  const handleChange = (field: keyof ServiceDetails | "serviceName", value: string | boolean) => {
+    if (field === "serviceName") {
+      // Update the serviceName inside the services array
+      setFormData((prev) => ({
+        ...prev,
+        services: [{ ...prev.services[0], serviceName: value as string }],
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [field]: value,
+      }));
+    }
+  };
+  
 
   const handleSubmit = () => {
-    setSaving(true)
+    setSaving(true);
 
     // In a real app, this would be an API call to update the service
     setTimeout(() => {
       if (onSave) {
-        onSave(formData)
+        onSave(formData);
       }
-      setSaving(false)
-      setOpen(false)
-    }, 1000)
-  }
+      setSaving(false);
+      setOpen(false);
+    }, 1000);
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -75,7 +85,7 @@ export function EditServiceDialog({ service, trigger, onSave }: EditServiceDialo
         <DialogHeader>
           <DialogTitle>Edit Service</DialogTitle>
           <DialogDescription>
-            Update service details for {service.clientName} (Client ID: {service.clientId})
+            Update service details for {service.practiceName} (Client ID: {service.clientId})
           </DialogDescription>
         </DialogHeader>
 
@@ -84,7 +94,7 @@ export function EditServiceDialog({ service, trigger, onSave }: EditServiceDialo
             <Label htmlFor="serviceName">Service Name</Label>
             <Input
               id="serviceName"
-              value={formData.serviceName}
+              value={formData.services[0]?.serviceName} // Accessing serviceName inside services array
               onChange={(e) => handleChange("serviceName", e.target.value)}
               disabled
             />
@@ -102,11 +112,11 @@ export function EditServiceDialog({ service, trigger, onSave }: EditServiceDialo
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="minimumCharge">Minimum Charge</Label>
+            <Label htmlFor="minimum">Minimum</Label>
             <Input
-              id="minimumCharge"
-              value={formData.minimumCharge}
-              onChange={(e) => handleChange("minimumCharge", e.target.value)}
+              id="minimum"
+              value={formData.minimum}
+              onChange={(e) => handleChange("minimum", e.target.value)}
               placeholder="e.g., $500 per month, N/A"
             />
           </div>
@@ -144,5 +154,5 @@ export function EditServiceDialog({ service, trigger, onSave }: EditServiceDialo
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

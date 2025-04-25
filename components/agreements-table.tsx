@@ -1,10 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { MoreHorizontal, Search, FileEdit, Download, ChevronDown, ChevronRight, FileText } from "lucide-react"
+import { supabase } from "@/lib/supabaseClient"
+import { Badge } from "@/components/ui/badge"
+import { RenewAgreementDialog } from "@/components/renew-agreement-dialog"
+import { ExportAgreementsDialog } from "@/components/export-agreements-dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,87 +17,59 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Badge } from "@/components/ui/badge"
-import { RenewAgreementDialog } from "@/components/renew-agreement-dialog"
-import { ExportAgreementsDialog } from "@/components/export-agreements-dialog"
+import { Separator } from "@radix-ui/react-dropdown-menu"
 
-// Mock data
-const agreements = [
-  {
-    id: "AG001",
-    clientId: "CL001",
-    clientName: "Sunshine Medical Group",
-    agreementDate: "2024-01-15",
-    commencementDate: "2024-02-01",
-    term: "1 year",
-    endDate: "2025-02-01",
-    status: "active",
-    details: [
-      { service: "Medical Billing", rate: "$25 per claim" },
-      { service: "Coding Review", rate: "$45 per hour" },
-    ],
-  },
-  {
-    id: "AG002",
-    clientId: "CL002",
-    clientName: "Westside Healthcare",
-    agreementDate: "2024-02-10",
-    commencementDate: "2024-03-01",
-    term: "2 years",
-    endDate: "2026-03-01",
-    status: "active",
-    details: [
-      { service: "Medical Billing", rate: "$22 per claim" },
-      { service: "Credentialing", rate: "$500 per provider" },
-    ],
-  },
-  {
-    id: "AG003",
-    clientId: "CL003",
-    clientName: "Northpark Physicians",
-    agreementDate: "2024-01-05",
-    commencementDate: "2024-01-15",
-    term: "1 year",
-    endDate: "2025-01-15",
-    status: "active",
-    details: [
-      { service: "Medical Billing", rate: "$28 per claim" },
-      { service: "AR Management", rate: "8% of collections" },
-    ],
-  },
-  {
-    id: "AG004",
-    clientId: "CL005",
-    clientName: "Valley Health Partners",
-    agreementDate: "2023-11-20",
-    commencementDate: "2023-12-01",
-    term: "1 year",
-    endDate: "2024-12-01",
-    status: "expiring-soon",
-    details: [
-      { service: "Medical Billing", rate: "$30 per claim" },
-      { service: "Denial Management", rate: "$50 per hour" },
-    ],
-  },
-  {
-    id: "AG005",
-    clientId: "CL007",
-    clientName: "Coastal Care Clinic",
-    agreementDate: "2023-10-15",
-    commencementDate: "2023-11-01",
-    term: "1 year",
-    endDate: "2024-11-01",
-    status: "expiring-soon",
-    details: [
-      { service: "Medical Billing", rate: "$26 per claim" },
-      { service: "Practice Management", rate: "$1,200 per month" },
-    ],
-  },
-]
+// Define the structure of AgreementDetails
+interface AgreementDetails {
+  agreement_id: string
+  client_id: string
+  agreement_date: string
+  commencement_date: string
+  term: string
+  end_date: string
+  practice_name: string // Removed client object and directly added practice_name
+}
 
 export function AgreementsTable() {
   const [searchTerm, setSearchTerm] = useState("")
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({})
+  const [agreements, setAgreements] = useState<AgreementDetails[]>([])
+
+  useEffect(() => {
+    const fetchAgreements = async () => {
+      const { data, error } = await supabase
+        .from("agreements")
+        .select(`
+          agreement_id, 
+          client_id, 
+          agreement_date, 
+          commencement_date, 
+          term, 
+          end_date, 
+          clients:client_id(practice_name)  // Join with the clients table to fetch practice_name
+        `)
+    
+      if (error) {
+        console.error("Error fetching agreements:", error)
+      } else {
+        const formattedData: AgreementDetails[] = data.map((agreement: any) => {
+          const practice_name = agreement.clients?.practice_name || "Unknown"  // Fetch the practice_name directly
+          return {
+            agreement_id: agreement.agreement_id,
+            client_id: agreement.client_id,
+            agreement_date: agreement.agreement_date,
+            commencement_date: agreement.commencement_date,
+            term: agreement.term,
+            end_date: agreement.end_date,
+            practice_name,  // Store practice_name directly
+          }
+        })
+        setAgreements(formattedData)
+      }
+    }
+    
+    fetchAgreements()
+  }, [])
 
   const toggleRow = (id: string) => {
     setExpandedRows((prev) => ({
@@ -102,37 +78,73 @@ export function AgreementsTable() {
     }))
   }
 
-  const filteredAgreements = agreements.filter(
-    (agreement) =>
-      agreement.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      agreement.clientId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      agreement.id.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+  const groupedAgreements = agreements.reduce((acc: Record<string, any>, agreement: any) => {
+    const client_id = agreement.client_id
 
-  const getStatusBadge = (status: string, endDate: string) => {
-    const today = new Date()
-    const end = new Date(endDate)
-    const daysRemaining = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-
-    if (status === "expired" || end < today) {
-      return <Badge variant="destructive">Expired</Badge>
-    } else if (status === "expiring-soon" || daysRemaining <= 90) {
-      return (
-        <Badge variant="outline" className="text-amber-600 border-amber-600">
-          Expiring Soon
-        </Badge>
-      )
-    } else {
-      return <Badge variant="default">Active</Badge>
+    if (!acc[client_id]) {
+      acc[client_id] = {
+        client_id,
+        practice_name: agreement.practice_name || "Unknown",  // Directly assign practice_name here
+        agreements: []
+      }
     }
+
+    acc[client_id].agreements.push({
+      agreement_id: agreement.agreement_id,
+      client_id: agreement.client_id,
+      agreement_date: agreement.agreement_date,
+      commencement_date: agreement.commencement_date,
+      term: agreement.term,
+      end_date: agreement.end_date,
+      practice_name: agreement.practice_name || "Unknown"  // Directly assign practice_name
+    })
+
+    return acc
+  }, {})
+
+  const getStatusBadge = (agreementDate: string, term: string, endDate: string) => {
+    const today = new Date()
+    let status = "Unknown"
+    let end: Date | null = null
+
+    if (endDate) {
+      end = new Date(endDate)
+    } else if (agreementDate && term) {
+      const start = new Date(agreementDate)
+      const termInMonths = parseInt(term.split(" ")[0], 10) * 12
+      end = new Date(start.setMonth(start.getMonth() + termInMonths))
+    }
+
+    if (end) {
+      if (end < today) {
+        status = "Expired"
+      } else if (end >= today) {
+        status = "Active"
+      }
+    }
+
+    return (
+      <Badge variant={status === "Expired" ? "destructive" : status === "Active" ? "default" : "outline"}>
+        {status}
+      </Badge>
+    )
   }
+
+  const filteredAgreements = Object.entries(groupedAgreements)
+    .filter(([_, data]) => 
+      (data.practice_name || "").toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .map(([clientId, data]) => ({
+      ...data,
+      clientId,
+    }))
 
   const handleRenewAgreement = (agreementId: string, startDate: string, term: string) => {
     // In a real app, this would be an API call to renew the agreement
     console.log(`Renewing agreement ${agreementId} from ${startDate} with term ${term}`)
     // After successful renewal, you would refresh the agreements list
   }
-
+  
   const handleExport = (columns: string[], format: string) => {
     // In a real app, this would be an API call to generate the export
     console.log(`Exporting agreements with columns: ${columns.join(", ")} in format: ${format}`)
@@ -142,7 +154,6 @@ export function AgreementsTable() {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div className="relative w-full sm:max-w-sm">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
           <Input
             placeholder="Search agreements..."
             className="pl-8"
@@ -156,7 +167,7 @@ export function AgreementsTable() {
             <FileText className="mr-2 h-4 w-4" />
             New Agreement
           </Button>
-          <ExportAgreementsDialog onExport={handleExport} />
+          <ExportAgreementsDialog onExport={(columns, format) => console.log(`Exporting agreements with columns: ${columns}, format: ${format}`)} />
         </div>
       </div>
 
@@ -165,11 +176,8 @@ export function AgreementsTable() {
           <TableHeader>
             <TableRow>
               <TableHead className="w-10"></TableHead>
-              <TableHead>ID</TableHead>
-              <TableHead>Client</TableHead>
-              <TableHead className="hidden md:table-cell">Agreement Date</TableHead>
-              <TableHead className="hidden md:table-cell">Commencement</TableHead>
-              <TableHead className="hidden md:table-cell">Term</TableHead>
+              <TableHead>Client ID</TableHead>
+              <TableHead>Practice Name</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -182,43 +190,30 @@ export function AgreementsTable() {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredAgreements.map((agreement) => (
+              filteredAgreements.map((clientData) => (
                 <>
-                  <TableRow
-                    key={agreement.id}
-                    className="cursor-pointer hover:bg-gray-50"
-                    onClick={() => toggleRow(agreement.id)}
-                  >
+                  <TableRow key={clientData.clientId} className="cursor-pointer hover:bg-gray-50">
                     <TableCell>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        {expandedRows[agreement.id] ? (
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleRow(clientData.clientId)}>
+                        {expandedRows[clientData.clientId] ? (
                           <ChevronDown className="h-4 w-4" />
                         ) : (
                           <ChevronRight className="h-4 w-4" />
                         )}
                       </Button>
                     </TableCell>
-                    <TableCell className="font-medium">{agreement.id}</TableCell>
-                    <TableCell>
-                      <div>{agreement.clientName}</div>
-                      <div className="text-xs text-gray-500">{agreement.clientId}</div>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      {new Date(agreement.agreementDate).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      {new Date(agreement.commencementDate).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">{agreement.term}</TableCell>
-                    <TableCell>{getStatusBadge(agreement.status, agreement.endDate)}</TableCell>
+                    <TableCell>{clientData.client_id}</TableCell>
+                    <TableCell>{clientData.practice_name}</TableCell>
+                    <TableCell>{getStatusBadge(clientData.agreements[0]?.agreement_date, clientData.agreements[0]?.term, clientData.agreements[0]?.end_date)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                        <RenewAgreementDialog
-                          agreementId={agreement.id}
-                          clientName={agreement.clientName}
-                          currentEndDate={agreement.endDate}
-                          onRenew={handleRenewAgreement}
-                        />
+                      <RenewAgreementDialog
+                        agreementId={clientData.agreement_id}
+                        clientName={clientData.practice_name}
+                        currentEndDate={clientData.end_date || new Date().toISOString()}  // Fallback to today's date if no end_date
+                        onRenew={handleRenewAgreement}
+                      />
+
 
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -243,46 +238,36 @@ export function AgreementsTable() {
                       </div>
                     </TableCell>
                   </TableRow>
-                  {expandedRows[agreement.id] && (
-                    <TableRow>
-                      <TableCell colSpan={8} className="bg-gray-50 p-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <h4 className="font-medium mb-2">Agreement Details</h4>
-                            <div className="space-y-2 text-sm">
-                              <div className="grid grid-cols-2 gap-2">
-                                <div className="text-gray-500">Agreement Date:</div>
-                                <div>{new Date(agreement.agreementDate).toLocaleDateString()}</div>
-                              </div>
-                              <div className="grid grid-cols-2 gap-2">
-                                <div className="text-gray-500">Commencement Date:</div>
-                                <div>{new Date(agreement.commencementDate).toLocaleDateString()}</div>
-                              </div>
-                              <div className="grid grid-cols-2 gap-2">
-                                <div className="text-gray-500">Term:</div>
-                                <div>{agreement.term}</div>
-                              </div>
-                              <div className="grid grid-cols-2 gap-2">
-                                <div className="text-gray-500">End Date:</div>
-                                <div>{new Date(agreement.endDate).toLocaleDateString()}</div>
-                              </div>
-                            </div>
+
+                  {expandedRows[clientData.clientId] && (
+                  <TableRow>
+                    <TableCell colSpan={8} className="bg-gray-50 p-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <h4 className="font-medium mb-2">Agreement Details</h4>
+                          <div className="space-y-2 text-sm">
+                          {clientData.agreements.map((agreement: AgreementDetails, index: number) => (
+                          <div key={agreement.agreement_id || index} className="grid grid-cols-2 gap-2">
+                            <div className="text-gray-500">Agreement Date:</div>
+                            <div>{new Date(agreement.agreement_date).toLocaleDateString()}</div>
+                            <div className="text-gray-500">Commencement Date:</div>
+                            <div>{new Date(agreement.commencement_date).toLocaleDateString()}</div>
+                            <div className="text-gray-500">Term:</div>
+                            <div>{agreement.term}</div>
+                            <div className="text-gray-500">End Date:</div>
+                            <div>{new Date(agreement.end_date).toLocaleDateString()}</div>
+                            <p>------------------------------------------------------</p>
+                            <Separator />
                           </div>
-                          <div>
-                            <h4 className="font-medium mb-2">Services</h4>
-                            <div className="space-y-2">
-                              {agreement.details.map((detail, index) => (
-                                <div key={index} className="text-sm grid grid-cols-2 gap-2">
-                                  <div>{detail.service}:</div>
-                                  <div>{detail.rate}</div>
-                                </div>
-                              ))}
+                        ))}
+
                             </div>
                           </div>
                         </div>
                       </TableCell>
                     </TableRow>
                   )}
+
                 </>
               ))
             )}

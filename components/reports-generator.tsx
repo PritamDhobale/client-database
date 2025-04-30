@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,223 +10,34 @@ import { FileText, Download, FileSpreadsheet, Eye, Search, X } from "lucide-reac
 import { ReportPreview } from "@/components/report-preview"
 import { SchemaReference } from "@/components/schema-reference"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { supabase } from "@/lib/supabaseClient"
+import jsPDF from "jspdf";
+import "jspdf-autotable";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
+import Papa from "papaparse";
+
 
 interface ReportsGeneratorProps {
   type: "client" | "agreement" | "service" | "financial"
 }
 
-// Mock clients data
-const clients = [
-  { id: "CL001", name: "Sunshine Medical Group" },
-  { id: "CL002", name: "Westside Healthcare" },
-  { id: "CL003", name: "Northpark Physicians" },
-  { id: "CL005", name: "Valley Health Partners" },
-  { id: "CL007", name: "Coastal Care Clinic" },
-  { id: "CL008", name: "Mountain View Medical" },
-  { id: "CL009", name: "Riverdale Health Services" },
-]
-
-// Mock report types based on the selected category
+// Report types based on the selected category
 const reportTypes = {
   client: [
     { id: "client-list", name: "Client List" },
     { id: "client-status", name: "Client Status Report" },
-    { id: "client-demographics", name: "Client Demographics" },
   ],
   agreement: [
     { id: "agreement-list", name: "Agreement List" },
     { id: "agreement-expiry", name: "Agreement Expiry Report" },
-    { id: "agreement-renewal", name: "Agreement Renewal History" },
   ],
   service: [
     { id: "service-list", name: "Service List" },
     { id: "service-rates", name: "Service Rates Report" },
-    { id: "service-npp", name: "NPP Status Report" },
   ],
   financial: [
     { id: "financial-summary", name: "Financial Summary" },
-    { id: "revenue-by-client", name: "Revenue by Client" },
-    { id: "billing-performance", name: "Billing Performance" },
-  ],
-}
-
-// Mock report data
-const mockReportData = {
-  "client-list": [
-    {
-      id: "CL001",
-      practiceName: "Sunshine Medical Group",
-      primaryContact: "Dr. Sarah Johnson",
-      email: "sjohnson@sunshinemedical.com",
-      status: "active",
-    },
-    {
-      id: "CL002",
-      practiceName: "Westside Healthcare",
-      primaryContact: "Dr. Michael Chen",
-      email: "mchen@westsidehc.com",
-      status: "active",
-    },
-    {
-      id: "CL003",
-      practiceName: "Northpark Physicians",
-      primaryContact: "Dr. Robert Williams",
-      email: "rwilliams@northparkphys.com",
-      status: "active",
-    },
-    {
-      id: "CL004",
-      practiceName: "Eastside Medical Center",
-      primaryContact: "Dr. Emily Rodriguez",
-      email: "erodriguez@eastsidemc.com",
-      status: "inactive",
-    },
-    {
-      id: "CL005",
-      practiceName: "Valley Health Partners",
-      primaryContact: "Dr. James Smith",
-      email: "jsmith@valleyhp.com",
-      status: "active",
-    },
-    {
-      id: "CL007",
-      practiceName: "Coastal Care Clinic",
-      primaryContact: "Dr. David Kim",
-      email: "dkim@coastalcare.com",
-      status: "active",
-    },
-  ],
-  "agreement-list": [
-    {
-      id: "AG001",
-      clientId: "CL001",
-      clientName: "Sunshine Medical Group",
-      startDate: "2024-02-01",
-      endDate: "2025-02-01",
-      status: "active",
-    },
-    {
-      id: "AG002",
-      clientId: "CL002",
-      clientName: "Westside Healthcare",
-      startDate: "2024-03-01",
-      endDate: "2026-03-01",
-      status: "active",
-    },
-    {
-      id: "AG003",
-      clientId: "CL003",
-      clientName: "Northpark Physicians",
-      startDate: "2024-01-15",
-      endDate: "2025-01-15",
-      status: "active",
-    },
-    {
-      id: "AG004",
-      clientId: "CL005",
-      clientName: "Valley Health Partners",
-      startDate: "2023-12-01",
-      endDate: "2024-12-01",
-      status: "expiring-soon",
-    },
-    {
-      id: "AG005",
-      clientId: "CL007",
-      clientName: "Coastal Care Clinic",
-      startDate: "2023-11-01",
-      endDate: "2024-11-01",
-      status: "expiring-soon",
-    },
-    {
-      id: "AG006",
-      clientId: "CL001",
-      clientName: "Sunshine Medical Group",
-      startDate: "2023-02-01",
-      endDate: "2024-02-01",
-      status: "expired",
-    },
-  ],
-  "service-list": [
-    {
-      id: "SV001",
-      clientId: "CL001",
-      clientName: "Sunshine Medical Group",
-      serviceName: "Medical Billing",
-      rate: "$25 per claim",
-      nppStatus: true,
-    },
-    {
-      id: "SV002",
-      clientId: "CL001",
-      clientName: "Sunshine Medical Group",
-      serviceName: "Coding Review",
-      rate: "$45 per hour",
-      nppStatus: true,
-    },
-    {
-      id: "SV003",
-      clientId: "CL002",
-      clientName: "Westside Healthcare",
-      serviceName: "Medical Billing",
-      rate: "$22 per claim",
-      nppStatus: true,
-    },
-    {
-      id: "SV004",
-      clientId: "CL002",
-      clientName: "Westside Healthcare",
-      serviceName: "Credentialing",
-      rate: "$500 per provider",
-      nppStatus: false,
-    },
-    {
-      id: "SV005",
-      clientId: "CL003",
-      clientName: "Northpark Physicians",
-      serviceName: "Medical Billing",
-      rate: "$28 per claim",
-      nppStatus: true,
-    },
-    {
-      id: "SV006",
-      clientId: "CL003",
-      clientName: "Northpark Physicians",
-      serviceName: "AR Management",
-      rate: "8% of collections",
-      nppStatus: true,
-    },
-  ],
-  "financial-summary": [
-    {
-      clientId: "CL001",
-      clientName: "Sunshine Medical Group",
-      revenue: 45250.75,
-      claims: 1810,
-    },
-    {
-      clientId: "CL002",
-      clientName: "Westside Healthcare",
-      revenue: 32180.5,
-      claims: 1463,
-    },
-    {
-      clientId: "CL003",
-      clientName: "Northpark Physicians",
-      revenue: 28975.25,
-      claims: 1035,
-    },
-    {
-      clientId: "CL005",
-      clientName: "Valley Health Partners",
-      revenue: 18450.0,
-      claims: 615,
-    },
-    {
-      clientId: "CL007",
-      clientName: "Coastal Care Clinic",
-      revenue: 12780.3,
-      claims: 492,
-    },
   ],
 }
 
@@ -245,49 +56,179 @@ export function ReportsGenerator({ type }: ReportsGeneratorProps) {
   const [showSchemaReference, setShowSchemaReference] = useState(false)
   const [activeTab, setActiveTab] = useState("generate")
 
+  const [clients, setClients] = useState<any[]>([])
+
+  // Fetch data from Supabase
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const { data: clientsData, error: clientsError } = await supabase
+          .from("Clients")
+          .select("client_id, practice_name, primary_contact_first_name, client_status")
+
+        if (clientsError) throw clientsError
+
+        const { data: agreementsData, error: agreementsError } = await supabase
+          .from("agreements")
+          .select("agreement_id, client_id, agreement_date, end_date")
+
+        if (agreementsError) throw agreementsError
+
+        const { data: servicesData, error: servicesError } = await supabase
+          .from("client_services")
+          .select("id, client_id, services(service_name), rate, npp_status")
+
+        if (servicesError) throw servicesError
+
+        // Combine all data into one object
+        const combinedData = clientsData.map(client => {
+          const clientAgreements = agreementsData.filter(agreement => agreement.client_id === client.client_id)
+          const clientServices = servicesData.filter(service => service.client_id === client.client_id)
+          return {
+            ...client,
+            agreements: clientAgreements,
+            services: clientServices,
+          }
+        })
+
+        setClients(combinedData) // Save the combined data in state
+      } catch (error) {
+        console.error("Error fetching data:", error)
+      }
+    }
+
+    fetchData()
+  }, [])
+
   // Filter clients based on search term
   const filteredClients = clients.filter(
     (client) =>
-      client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.id.toLowerCase().includes(searchTerm.toLowerCase()),
+      client.practice_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.client_id.toLowerCase().includes(searchTerm.toLowerCase())
   )
+
+  const exportReportToPDF = () => {
+    const doc = new jsPDF();
+  
+    // Add Title
+    doc.text("Client Report", 10, 10);
+  
+    // Prepare the data
+    const tableData = reportData.map((client: any) => [
+      client.client_id,
+      client.practice_name,
+      client.primary_contact_first_name,
+      client.client_status === "active" ? "Active" : "Inactive"
+    ]);
+  
+    // Add the table
+    doc.autoTable({
+      head: [["Client ID", "Practice Name", "Primary Contact", "Status"]],
+      body: tableData,
+    });
+  
+    // Save the PDF
+    doc.save("client-report.pdf");
+  };
+  
 
   // Toggle client selection
   const toggleClient = (clientId: string) => {
-    setSelectedClients((prev) => (prev.includes(clientId) ? prev.filter((id) => id !== clientId) : [...prev, clientId]))
+    setSelectedClients((prev) =>
+      prev.includes(clientId) ? prev.filter((id) => id !== clientId) : [...prev, clientId]
+    )
   }
 
-  // Generate report
+  const exportReportToCSV = () => {
+    // Convert the report data into CSV
+    const csvData = Papa.unparse(reportData.map((client: any) => ({
+      "Client ID": client.client_id,
+      "Practice Name": client.practice_name,
+      "Primary Contact": client.primary_contact_first_name,
+      "Status": client.client_status === "active" ? "Active" : "Inactive"
+    })));
+  
+    // Trigger CSV download
+    const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
+    saveAs(blob, "client-report.csv");
+  };
+
+  const exportReportToExcel = () => {
+    // Create a new worksheet from report data
+    const ws = XLSX.utils.json_to_sheet(reportData.map((client: any) => ({
+      "Client ID": client.client_id,
+      "Practice Name": client.practice_name,
+      "Primary Contact": client.primary_contact_first_name,
+      "Status": client.client_status === "active" ? "Active" : "Inactive"
+    })));
+  
+    // Create a workbook and add the worksheet to it
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Client Report");
+  
+    // Write the Excel file and trigger download
+    XLSX.writeFile(wb, "client-report.xlsx");
+  };
+  
+
+  // Handle report generation
   const generateReport = () => {
     if (selectedClients.length === 0) return
 
     setIsGenerating(true)
     setReportData(null)
 
-    // Simulate API call to generate report
-    setTimeout(() => {
-      // Filter mock data based on selected clients
-      const filteredData = mockReportData[selectedReportType as keyof typeof mockReportData]?.filter((item: any) =>
-        selectedClients.includes(item.clientId),
-      )
-
-      setReportData(filteredData || [])
-      setIsGenerating(false)
-      setActiveTab("preview")
-    }, 1500)
+    // Filter data based on selected report type
+    const filteredData = clients
+    .filter((client) => selectedClients.includes(client.client_id))
+    .map((client) => ({
+      client_id: client.client_id,
+      practice_name: client.practice_name,
+      // Correcting the filtering logic for services and agreements
+      services: client.services.filter((service: { service_name: string; rate: string; npp_status: boolean }) =>
+        selectedReportType === "service-list"
+      ),
+      agreements: client.agreements.filter((agreement: { agreement_id: string; agreement_date: string; end_date: string}) =>
+        selectedReportType === "agreement-list"
+      ),
+    }));
+  
+  setReportData(filteredData);
+  setIsGenerating(false);
+  setActiveTab("preview");
+  
   }
 
-  // Clear report
+  const exportReport = () => {
+    // Export to PDF, CSV, or Excel based on selected format
+    switch (reportFormat) {
+      case "pdf":
+        exportReportToPDF();
+        break;
+      case "csv":
+        exportReportToCSV();
+        break;
+      case "excel":
+        exportReportToExcel();
+        break;
+      default:
+        console.error("Unsupported format");
+        break;
+    }
+  };
+  
+
+  // Clear report data
   const clearReport = () => {
     setReportData(null)
     setSelectedClients([])
     setSearchTerm("")
   }
 
-  // Handle bulk selection
+  // Handle bulk client selection
   const handleBulkSelection = (select: boolean) => {
     if (select) {
-      setSelectedClients(filteredClients.map((client) => client.id))
+      setSelectedClients(filteredClients.map((client) => client.client_id))
     } else {
       setSelectedClients([])
     }
@@ -434,7 +375,7 @@ export function ReportsGenerator({ type }: ReportsGeneratorProps) {
                           id="select-all"
                           checked={
                             filteredClients.length > 0 &&
-                            filteredClients.every((client) => selectedClients.includes(client.id))
+                            filteredClients.every((client) => selectedClients.includes(client.client_id))
                           }
                           onCheckedChange={(checked) => handleBulkSelection(!!checked)}
                         />
@@ -447,15 +388,15 @@ export function ReportsGenerator({ type }: ReportsGeneratorProps) {
                       )}
                     </div>
                     {filteredClients.map((client) => (
-                      <div key={client.id} className="flex items-center space-x-2">
+                      <div key={client.client_id} className="flex items-center space-x-2">
                         <Checkbox
-                          id={client.id}
-                          checked={selectedClients.includes(client.id)}
-                          onCheckedChange={() => toggleClient(client.id)}
+                          id={client.client_id}
+                          checked={selectedClients.includes(client.client_id)}
+                          onCheckedChange={() => toggleClient(client.client_id)}
                         />
-                        <Label htmlFor={client.id} className="flex-1">
-                          <span className="font-medium">{client.name}</span>
-                          <span className="text-xs text-gray-500 ml-2">{client.id}</span>
+                        <Label htmlFor={client.client_id} className="flex-1">
+                          <span className="font-medium">{client.practice_name}</span>
+                          <span className="text-xs text-gray-500 ml-2">{client.client_id}</span>
                         </Label>
                       </div>
                     ))}
@@ -464,7 +405,7 @@ export function ReportsGenerator({ type }: ReportsGeneratorProps) {
               </div>
 
               <div className="text-sm text-gray-500">
-                {selectedClients.length} of {clients.length} clients selected
+                {selectedClients.length} of {filteredClients.length} clients selected
               </div>
             </div>
           </div>
@@ -493,17 +434,17 @@ export function ReportsGenerator({ type }: ReportsGeneratorProps) {
           />
 
           <div className="flex justify-end mt-4 space-x-2">
-            <Button variant="outline" onClick={() => setActiveTab("generate")}>
-              Back to Generator
-            </Button>
-            <Button variant="outline">
-              <FileSpreadsheet className="mr-2 h-4 w-4" />
-              Export as CSV
-            </Button>
-            <Button>
-              <Download className="mr-2 h-4 w-4" />
-              Download as {reportFormat.toUpperCase()}
-            </Button>
+              <Button variant="outline" onClick={() => setActiveTab("generate")}>
+                Back to Generator
+              </Button>
+              <Button variant="outline" onClick={exportReport}>
+                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                Export as CSV
+              </Button>
+              <Button onClick={exportReport}>
+                <Download className="mr-2 h-4 w-4" />
+                Download as {reportFormat.toUpperCase()}
+              </Button>
           </div>
         </TabsContent>
 

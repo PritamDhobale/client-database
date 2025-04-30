@@ -1,20 +1,23 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { FileText, Download, FileSpreadsheet, Printer, Copy, Check } from "lucide-react"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Badge } from "@/components/ui/badge"
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FileText, Download, FileSpreadsheet, Printer, Copy, Check } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import jsPDF from "jspdf"
+import "jspdf-autotable"
+import * as XLSX from "xlsx"
 
 interface ReportPreviewProps {
-  reportType: string
-  reportData: any
-  isLoading: boolean
-  selectedClients: string[]
-  dateRange: string
-  customDateRange?: { startDate: string; endDate: string }
+  reportType: string;
+  reportData: any;
+  isLoading: boolean;
+  selectedClients: string[];
+  dateRange: string;
+  customDateRange?: { startDate: string; endDate: string };
 }
 
 export function ReportPreview({
@@ -25,46 +28,46 @@ export function ReportPreview({
   dateRange,
   customDateRange,
 }: ReportPreviewProps) {
-  const [activeView, setActiveView] = useState("preview")
-  const [copied, setCopied] = useState(false)
+  const [activeView, setActiveView] = useState("preview");
+  const [copied, setCopied] = useState(false);
 
   // Reset copied state after 2 seconds
   useEffect(() => {
     if (copied) {
-      const timer = setTimeout(() => setCopied(false), 2000)
-      return () => clearTimeout(timer)
+      const timer = setTimeout(() => setCopied(false), 2000);
+      return () => clearTimeout(timer);
     }
-  }, [copied])
+  }, [copied]);
 
   // Format date range for display
   const getFormattedDateRange = () => {
     if (dateRange === "custom" && customDateRange) {
       return `${new Date(customDateRange.startDate).toLocaleDateString()} - ${new Date(
-        customDateRange.endDate,
-      ).toLocaleDateString()}`
+        customDateRange.endDate
+      ).toLocaleDateString()}`;
     }
 
     switch (dateRange) {
       case "last30":
-        return "Last 30 Days"
+        return "Last 30 Days";
       case "last90":
-        return "Last 90 Days"
+        return "Last 90 Days";
       case "lastYear":
-        return "Last Year"
+        return "Last Year";
       default:
-        return "Custom Range"
+        return "Custom Range";
     }
-  }
+  };
 
   // Handle copy to clipboard
   const handleCopy = () => {
     if (reportData) {
       // In a real app, this would format the data properly
-      const textData = JSON.stringify(reportData, null, 2)
-      navigator.clipboard.writeText(textData)
-      setCopied(true)
+      const textData = JSON.stringify(reportData, null, 2);
+      navigator.clipboard.writeText(textData);
+      setCopied(true);
     }
-  }
+  };
 
   // Generate mock report data based on report type
   const generateMockReportData = () => {
@@ -77,7 +80,7 @@ export function ReportPreview({
           <Skeleton className="h-4 w-5/6" />
           <Skeleton className="h-4 w-full" />
         </div>
-      )
+      );
     }
 
     if (!reportData || selectedClients.length === 0) {
@@ -91,7 +94,7 @@ export function ReportPreview({
               : "No data available for the selected criteria."}
           </p>
         </div>
-      )
+      );
     }
 
     // Different preview based on report type
@@ -123,12 +126,12 @@ export function ReportPreview({
               <tbody className="bg-white divide-y divide-gray-200">
                 {reportData.slice(0, 5).map((client: any, index: number) => (
                   <tr key={index}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{client.id}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{client.practiceName}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{client.primaryContact}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{client.client_id}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{client.practice_name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{client.primary_contact_first_name}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <Badge variant={client.status === "active" ? "default" : "secondary"}>
-                        {client.status === "active" ? "Active" : "Inactive"}
+                      <Badge variant={client.client_status === "active" ? "default" : "secondary"}>
+                        {client.client_status === "active" ? "active" : "inactive"}
                       </Badge>
                     </td>
                   </tr>
@@ -141,7 +144,7 @@ export function ReportPreview({
               </p>
             )}
           </div>
-        )
+        );
 
       case "agreement-list":
         return (
@@ -187,16 +190,16 @@ export function ReportPreview({
                           agreement.status === "active"
                             ? "default"
                             : agreement.status === "expiring-soon"
-                              ? "outline"
-                              : "secondary"
+                            ? "outline"
+                            : "secondary"
                         }
                         className={agreement.status === "expiring-soon" ? "text-amber-600 border-amber-600" : undefined}
                       >
                         {agreement.status === "active"
-                          ? "Active"
+                          ? "active"
                           : agreement.status === "expiring-soon"
-                            ? "Expiring Soon"
-                            : "Expired"}
+                          ? "Expiring Soon"
+                          : "Expired"}
                       </Badge>
                     </td>
                   </tr>
@@ -209,123 +212,7 @@ export function ReportPreview({
               </p>
             )}
           </div>
-        )
-
-      case "service-list":
-        return (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-medium">Service List Report</h3>
-              <Badge variant="outline">{getFormattedDateRange()}</Badge>
-            </div>
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Service ID
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Client
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Service Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Rate
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    NPP Status
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {reportData.slice(0, 5).map((service: any, index: number) => (
-                  <tr key={index}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{service.id}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{service.clientName}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{service.serviceName}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{service.rate}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <Badge variant={service.nppStatus ? "default" : "secondary"}>
-                        {service.nppStatus ? "Active" : "Inactive"}
-                      </Badge>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {reportData.length > 5 && (
-              <p className="text-sm text-gray-500 italic text-center">
-                Showing 5 of {reportData.length} records. Download the full report to see all data.
-              </p>
-            )}
-          </div>
-        )
-
-      case "financial-summary":
-        return (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-medium">Financial Summary Report</h3>
-              <Badge variant="outline">{getFormattedDateRange()}</Badge>
-            </div>
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Client
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Revenue
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Claims
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Avg. Per Claim
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {reportData.slice(0, 5).map((item: any, index: number) => (
-                  <tr key={index}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.clientName}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.revenue.toFixed(2)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.claims}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      ${(item.revenue / item.claims).toFixed(2)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot className="bg-gray-50">
-                <tr>
-                  <td className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Total
-                  </td>
-                  <td className="px-6 py-3 text-left text-xs font-medium text-gray-900">
-                    ${reportData.reduce((sum: number, item: any) => sum + item.revenue, 0).toFixed(2)}
-                  </td>
-                  <td className="px-6 py-3 text-left text-xs font-medium text-gray-900">
-                    {reportData.reduce((sum: number, item: any) => sum + item.claims, 0)}
-                  </td>
-                  <td className="px-6 py-3 text-left text-xs font-medium text-gray-900">
-                    $
-                    {(
-                      reportData.reduce((sum: number, item: any) => sum + item.revenue, 0) /
-                      reportData.reduce((sum: number, item: any) => sum + item.claims, 0)
-                    ).toFixed(2)}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-            {reportData.length > 5 && (
-              <p className="text-sm text-gray-500 italic text-center">
-                Showing 5 of {reportData.length} records. Download the full report to see all data.
-              </p>
-            )}
-          </div>
-        )
+        );
 
       default:
         return (
@@ -334,9 +221,9 @@ export function ReportPreview({
             <h3 className="text-lg font-medium text-gray-500">Report Preview</h3>
             <p className="text-sm text-gray-400 mt-2">Select a report type to preview data.</p>
           </div>
-        )
+        );
     }
-  }
+  };
 
   // Generate JSON view
   const generateJsonView = () => {
@@ -349,7 +236,7 @@ export function ReportPreview({
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-full" />
         </div>
-      )
+      );
     }
 
     if (!reportData || selectedClients.length === 0) {
@@ -363,7 +250,7 @@ export function ReportPreview({
               : "No data available for the selected criteria."}
           </p>
         </div>
-      )
+      );
     }
 
     return (
@@ -382,8 +269,8 @@ export function ReportPreview({
           {JSON.stringify(reportData, null, 2)}
         </pre>
       </div>
-    )
-  }
+    );
+  };
 
   return (
     <Card>
@@ -421,5 +308,5 @@ export function ReportPreview({
         </Tabs>
       </CardContent>
     </Card>
-  )
+  );
 }

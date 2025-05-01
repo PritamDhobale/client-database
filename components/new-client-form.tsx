@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"; // Add useEffect here
 import { supabase } from "@/lib/supabaseClient"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -49,8 +49,14 @@ interface Client {
     current_ehr: "",
     type_of_entity: "",
     website: "",
-    zip: ""
-  }
+    zip: "",
+    agreement_date: "",
+    commencement_date: "",
+    term: "",
+    service_name: "",
+    id: "",
+    services: string[]; // This is important
+    }
 
 // List of US states for the dropdown
 const US_STATES = [
@@ -111,6 +117,7 @@ const CATEGORIES = ["Primary Care", "Specialty", "Hospital", "Other"]
 
 export function NewClientForm() {
   const [open, setOpen] = useState(false)
+  const [services, setServices] = useState<Client[]>([]);
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState({
     practice_name: "",
@@ -142,41 +149,146 @@ export function NewClientForm() {
     current_ehr: "",
     type_of_entity: "",
     website: "",
-    zip: ""
+    zip: "",
+    agreement_date: "",
+    commencement_date: "",
+    term: "",
+    service_name: "",
+    id: "",
+    services: [] as string[],  // Ensure services is typed as an array of strings (string[])
   })
   
   
 
-  const handleChange = (field: string, value: string) => {
+  const handleChange = (field: string, value: any) => {
     setFormData({
       ...formData,
-      [field]: value,
-    })
-  }
+      [field]: value, // This will correctly handle both single values and arrays
+    });
+  };
 
+  useEffect(() => {
+    const fetchServices = async () => {
+      const { data, error } = await supabase.from("services").select("*");
+      if (data) {
+        setServices(data); // Now TypeScript knows that 'data' is of type 'Service[]'
+      } else {
+        console.error("Failed to fetch services:", error);
+      }
+    };
+    fetchServices();
+  }, []);
+
+
+  // const handleSubmit = async () => {
+  //   setSaving(true)
+  //   try {
+  //     const payload = {
+  //       ...formData,
+  //       zip: Number(formData.zip || 0),
+  //       created_at: new Date().toISOString(),
+  //       // client_status: "active"
+  //     }
+  
+  //     console.log("Payload being sent:", payload)
+  
+  //     const { data, error } = await supabase
+  //       .from("Clients")
+  //       .insert([payload])
+  //       .select("*")
+  
+  //     if (error) {
+  //       console.error("❌ Failed to add client:", error)
+  //     } else {
+  //       console.log("✅ Client added:", data)
+  //       setOpen(false)
+  //       // Reset formData to blank values
+  //       setFormData({
+  //         practice_name: "",
+  //         dba: "",
+  //         code: "",
+  //         client_status: "",
+  //         sla_number: "",
+  //         primary_contact_title: "",
+  //         primary_contact_first_name: "",
+  //         primary_contact_last_name: "",
+  //         primary_contact_email: "",
+  //         primary_contact_phone: "",
+  //         email: "",
+  //         admin_contact_first_name: "",
+  //         admin_contact_last_name: "",
+  //         admin_contact_phone: "",
+  //         admin_contact_title: "",
+  //         admin_contact_email: "",
+  //         authorized_rep_first_name: "",
+  //         authorized_rep_last_name: "",
+  //         authorized_rep_phone: "",
+  //         authorized_rep_title: "",
+  //         authorized_rep_email: "",
+  //         city: "",
+  //         state: "",
+  //         state_of_formation: "",
+  //         street_address: "",
+  //         current_ehr: "",
+  //         category_id: "",
+  //         type_of_entity: "",
+  //         website: "",
+  //         zip: "",
+  //         agreement_date: "",
+  //         commencement_date: "",
+  //         term: "",
+  //         service_name: "",
+  //         id: "",
+  //         services: []
+  //       })
+  //     }
+  //   } catch (err) {
+  //     console.error("Unexpected error while adding client:", err)
+  //   } finally {
+  //     setSaving(false)
+  //   }
+  // }
   const handleSubmit = async () => {
-    setSaving(true)
+    setSaving(true);
     try {
       const payload = {
         ...formData,
         zip: Number(formData.zip || 0),
         created_at: new Date().toISOString(),
-        // client_status: "active"
-      }
+      };
   
-      console.log("Payload being sent:", payload)
+      console.log("Payload being sent:", payload);
   
       const { data, error } = await supabase
         .from("Clients")
         .insert([payload])
-        .select("*")
+        .select("*");
   
       if (error) {
-        console.error("❌ Failed to add client:", error)
+        console.error("Failed to add client:", error);
       } else {
-        console.log("✅ Client added:", data)
-        setOpen(false)
-        // Reset formData to blank values
+        console.log("Client added:", data);
+  
+        // Insert selected services into client_services
+        const clientId = data[0].client_id; // Assuming the client_id is returned from the insert
+        const servicesToAdd = formData.services.map((serviceId: string) => ({
+          client_id: clientId,
+          service_id: serviceId, // service_id is stored as varchar in services table
+        }));
+  
+        const { error: serviceError } = await supabase
+          .from("client_services")
+          .upsert(servicesToAdd);
+  
+        if (serviceError) {
+          console.error("Failed to add services:", serviceError);
+        } else {
+          console.log("Services added:", servicesToAdd);
+        }
+  
+        setOpen(false);
+  
+        // Reset formData after successful submit
         setFormData({
           practice_name: "",
           dba: "",
@@ -207,16 +319,22 @@ export function NewClientForm() {
           category_id: "",
           type_of_entity: "",
           website: "",
-          zip: ""
-        })
+          zip: "",
+          agreement_date: "",
+          commencement_date: "",
+          term: "",
+          service_name: "",
+          id: "",
+          services: [] as string[],  // Ensure services is typed as an array of strings (string[])
+        });
       }
     } catch (err) {
-      console.error("Unexpected error while adding client:", err)
+      console.error("Unexpected error while adding client:", err);
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
- 
+  };
+  
   
 
   return (
@@ -247,22 +365,6 @@ export function NewClientForm() {
                 required
               />
             </div>
-
-            {/* <div className="space-y-2">
-              <Label htmlFor="category">Category *</Label>
-              <Select value={formData.category} onValueChange={(value) => handleChange("category", value)}>
-                <SelectTrigger id="category">
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {CATEGORIES.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div> */}
 
             <div className="space-y-2">
               <Label htmlFor="primary_contact_first_name">Primary Contact First Name *</Label>
@@ -505,6 +607,56 @@ export function NewClientForm() {
             </div>
 
             <div className="space-y-2">
+                <Label htmlFor="agreement_date">Agreement Date</Label>
+                <Input
+                  id="agreement_date"
+                  type="date"
+                  value={formData.agreement_date}
+                  onChange={(e) => handleChange("agreement_date", e.target.value)}
+                />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="commencement_date">Commencement Date</Label>
+                <Input
+                  id="commencement_date"
+                  type="date"
+                  value={formData.commencement_date}
+                  onChange={(e) => handleChange("commencement_date", e.target.value)}
+                />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="term">Term</Label>
+                <Input
+                  id="term"
+                  type="text"
+                  value={formData.term}
+                  onChange={(e) => handleChange("term", e.target.value)}
+                />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="services">Services</Label>
+              <Select
+                value={formData.services} // This should be an array of selected service IDs (string[])
+                onValueChange={(value: string | string[]) => {
+                  // Ensure the value is an array of strings
+                  handleChange("services", Array.isArray(value) ? value : [value]);
+                }}
+                multiple // Enable multi-selection
+              >
+                <SelectTrigger id="services">
+                  <SelectValue placeholder="Select services" />
+                </SelectTrigger>
+                <SelectContent>
+                  {services.map((service) => (
+                    <SelectItem key={service.id} value={service.id}>
+                      {service.service_name} {/* Display service name */}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
               <Label htmlFor="code">Code</Label>
               <Input id="code" value={formData.code} onChange={(e) => handleChange("code", e.target.value)} />
             </div>
@@ -529,66 +681,9 @@ export function NewClientForm() {
               <Input id="website" value={formData.website} onChange={(e) => handleChange("website", e.target.value)} />
             </div>
 
-
           </div>
 
-          {/* Billing Information
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Billing Information</h3>
-
-            <div className="space-y-2">
-              <Label htmlFor="tax_id">Tax ID</Label>
-              <Input id="tax_id" value={formData.tax_id} onChange={(e) => handleChange("tax_id", e.target.value)} />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="npi">NPI</Label>
-              <Input id="npi" value={formData.npi} onChange={(e) => handleChange("npi", e.target.value)} />
-            </div>
-
             <Separator />
-
-            <div className="space-y-2">
-              <Label htmlFor="billing_contact_name">Billing Contact Name</Label>
-              <Input
-                id="billing_contact_name"
-                value={formData.billing_contact_name}
-                onChange={(e) => handleChange("billing_contact_name", e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="billing_contact_email">Billing Contact Email</Label>
-              <Input
-                id="billing_contact_email"
-                type="email"
-                value={formData.billing_contact_email}
-                onChange={(e) => handleChange("billing_contact_email", e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="billing_contact_phone">Billing Contact Phone</Label>
-              <Input
-                id="billing_contact_phone"
-                value={formData.billing_contact_phone}
-                onChange={(e) => handleChange("billing_contact_phone", e.target.value)}
-              />
-            </div> */}
-
-            <Separator />
-
-            {/* <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                id="notes"
-                value={formData.notes}
-                onChange={(e) => handleChange("notes", e.target.value)}
-                rows={4}
-              />
-            </div>
-          </div>
-        </div> */}
 
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>

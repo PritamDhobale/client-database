@@ -33,6 +33,31 @@ type Client = {
     category_id: string
     category_name: string
     client_status: string
+    primary_contact_title: string
+    primary_contact_phone: string
+    primary_contact_email: string
+    admin_contact_last_name: string
+    admin_contact_first_name: string
+    admin_contact_email: string
+    admin_contact_phone: string
+    admin_contact_title: string
+    authorized_rep_phone: string
+    authorized_rep_email: string
+    authorized_rep_title: string
+    authorized_rep_last_name: string
+    authorized_rep_first_name: string
+    street_address: string
+    sla_number: String
+    city: string
+    current_ehr: string
+    state_of_formation: string
+    website: string
+    type_of_entity: string
+    zip: string
+    dba: string
+    code: string
+    notes: string
+    created_at: string
 }
 
 

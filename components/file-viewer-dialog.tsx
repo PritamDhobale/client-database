@@ -82,7 +82,7 @@ export function FileViewerDialog({ clientId, clientName, trigger }: FileViewerDi
         {trigger || (
           <Button variant="outline" size="sm">
             <Eye className="mr-2 h-4 w-4" />
-            View Files
+            View
           </Button>
         )}
       </DialogTrigger>

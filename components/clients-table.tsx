@@ -452,15 +452,14 @@ console.log("Filtered clients data:", filteredClients);
                 filteredClients.map((client) => (
                   <TableRow key={client.client_id} className="cursor-pointer hover:bg-gray-50" onClick={() => handleRowClick(client.client_id)}>
   <TableCell className="font-medium">{sanitizeValue(client.client_id)}</TableCell>
-  <TableCell>{sanitizeValue(client.practice_name)}</TableCell>
-  <TableCell className="hidden md:table-cell">
-  {/* if N/A then field should be empty */}
+  <TableCell className="hidden md:table-cell">{sanitizeValue(client.practice_name)}</TableCell>
+  <TableCell className="hidden md:table-cell whitespace-nowrap">
     {sanitizeValue(`${client.primary_contact_first_name ?? ""} ${client.primary_contact_last_name ?? ""},  ${client.primary_contact_title ?? ""}`)}
   </TableCell>
-  <TableCell className="hidden md:table-cell">{sanitizeValue(client.email)}</TableCell>
+  <TableCell className="hidden md:table-cell whitespace-nowrap">{sanitizeValue(client.email)}</TableCell>
   <TableCell className="hidden md:table-cell whitespace-nowrap">{sanitizeValue(client.primary_contact_phone)}</TableCell>
-  <TableCell className="hidden md:table-cell">{sanitizeValue(client.state)}</TableCell>
-  <TableCell className="hidden md:table-cell">0{sanitizeValue(client.category_id || "Not Available")}</TableCell>  <TableCell className="text-right">
+  <TableCell className="text-xs px-1 text-center align-middle w-[60px]">{sanitizeValue(client.state)}</TableCell>
+  <TableCell className="text-xs px-1 text-center align-middle w-[60px]">0{sanitizeValue(client.category_id || "Not Available")}</TableCell>  <TableCell className="text-right">
 
                       <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                         <FileUploadDialog clientId={client.client_id} clientName={client.practice_name} />

@@ -157,7 +157,7 @@ export function FileUploadDialog({ clientId, clientName, trigger, onUploadComple
         {trigger || (
           <Button variant="outline" size="sm">
             <UploadCloud className="mr-2 h-4 w-4" />
-            Upload Files
+            Upload
           </Button>
         )}
       </DialogTrigger>

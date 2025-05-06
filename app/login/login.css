@@ -1,129 +1,155 @@
 /* login.css */
+/* login.css */
+* {
+  box-sizing: border-box;
+}
+
 body, html {
-    margin: 0;
-    padding: 0;
-    font-family: 'Inter', 'Inter Fallback';
-    font-style: normal;
-  }
-  
-  .login-page {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    background-color: white;
-    position: relative;
-  }
-  
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', 'Inter Fallback', sans-serif;
+  background-color: white;
+  height: 100%;
+}
+
+/* Page container */
+.login-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Logo */
+.mysage-logo {
+  width: 100%;
+  max-width: 260px;
+  height: auto;
+  margin-top: -10px;
+  margin-bottom: -45px; /* Reduced gap */
+}
+
+/* POWERED BY text */
+.powered-by-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8bc53d;
+  align-self: flex-end;
+  margin-top: 4px;
+  margin-right: 0;
+  text-align: right;
+  width: 100%;
+}
+
+
+/* Green login box */
+.login-box {
+  background-color: #8bc53d;
+  width: 100%;
+  max-width: 420px;
+  margin-top: 15px;
+  padding: 30px 30px;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Title in login box */
+.login-heading {
+  color: white;
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+/* Form container */
+.login-box form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Labels */
+.login-box label {
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+}
+
+/* Input fields */
+.login-box input {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+  border: none;
+  border-radius: 4px;
+}
+
+/* Logo wrapper - to control alignment of logo + powered by */
+.logo-wrapper {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;       /* ✅ center logo */
+  position: relative;
+}
+
+
+/* Login button */
+.login-btn {
+  background-color: white;
+  color: black;
+  font-weight: bold;
+  font-size: 14px;
+  border-radius: 25px;
+  padding: 10px 25px;
+  border: none;
+  cursor: pointer;
+  align-self: center;
+  margin-top: 10px;
+}
+
+.login-btn:hover {
+  background-color: #f3f3f3;
+}
+
+/* Error message */
+.error-message {
+  color: red;
+  font-size: 12px;
+  margin-top: -10px;
+}
+
+/* Footer */
+.footer-text {
+  margin-top: 40px;
+  font-size: 14px;
+  text-align: center;
+}
+
+/* Mobile responsiveness */
+@media screen and (max-width: 480px) {
   .mysage-logo {
-    width: 300px;
-    margin-bottom: -40px;
-    margin-top: -30px;
+    max-width: 200px;
   }
-  
-  .top-right {
-    position: absolute;
-    top: 20px;
-    right: 25px;
-    font-size: 12px;
-    font-weight: 600;
-    color: #8bc53d;
-    text-align: right;
-  }
-  
-  .hubone {
-    color: #8bc53d;
-  }
-  
+
   .login-box {
-    background-color: #8bc53d;
-    padding: 30px 40px;
-    width: 400px;
-    text-align: center; /* ✅ Center everything */
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    padding: 20px;
   }
-
-  .login-box form {
-    display: flex;
-    flex-direction: column;
-    align-items: center; /* ✅ Center form fields */
-  }
-
 
   .login-heading {
-    color: white;
-    text-align: center;
-    margin-bottom: 20px;
-    font-size: 20px;
-    font-weight: 600;
-  }
-  
-  .login-box label {
-    color: white;
-    font-size: 14px;
-    font-weight: 500;
-    margin-bottom: 5px;
-    align-self: flex-start; /* ✅ Align label to left inside center form */
-  }
-  
-  .login-box input {
-    width: 100%;
-    padding: 8px;
-    margin-bottom: 15px;
-    border: none;
-    border-radius: 0;
-    font-size: 14px;
-    text-align: left;
-  }
-  
-  .login-btn {
-    background-color: white;
-    color: black;
-    font-weight: bold;
-    font-size: 14px;
-    border-radius: 25px;
-    padding: 8px 25px;
-    border: none;
-    cursor: pointer;
-    width: fit-content;         /* ✅ Make it just wide enough for "LOG IN" */
-    align-self: center;         /* ✅ Center the button */
-    margin-top: 25px;
-  }
-  
-  .login-btn:hover {
-    background-color: #f3f3f3;
-  }
-  
-  .error-message {
-    color: red;
-    font-size: 12px;
-    margin-top: -10px;
-    margin-bottom: 10px;
+    font-size: 18px;
   }
 
-  .logo-wrapper {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 10px;
-  }
-  
-  .powered-by-text {
-    font-size: 12px;
-    font-weight: 600;
-    color: #8bc53d;
-    margin-right: -270px;
-    text-align: right;
-  }
-  
-  .logo-size {
-    font-size: 10px;
-  }
   .footer-text {
-    margin-top: 150px;
-    font-size: 14.8px;
+    font-size: 12px;
   }
+}
+
   
 
 

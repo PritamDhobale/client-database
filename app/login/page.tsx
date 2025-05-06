@@ -66,15 +66,12 @@ export default function LoginPage() {
       {/* Displaying the Mysage logo */}
       <div className="logo-wrapper">
   <img src="/images/sage_healthy_rcm_logo.png" alt="mySAGE Logo" className="mysage-logo" />
-      <div className="powered-by-text">
-        <div className="logo-size">
-        POWERED BY
-        </div>
-      <div className="hubone">
-        HUBONE SYSTEMS
-      </div>
-      </div>
-    </div>
+  <div className="powered-by-text">
+    POWERED BY <br />
+    HUBONE SYSTEMS
+  </div>
+</div>
+
 
       <div className="login-box">
         <h2 className="login-heading">AccountsHub</h2>

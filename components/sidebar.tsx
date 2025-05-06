@@ -55,13 +55,13 @@ export default function Sidebar() {
       
       <aside
         className={cn(
-          "bg-white border-r border-gray-200 w-56 flex-shrink-0 flex flex-col transition-all duration-300 ease-in-out",
+          "bg-white border-r border-gray-200 w-40 flex-shrink-0 flex flex-col transition-all duration-300 ease-in-out",
           isOpen ? "fixed inset-y-0 left-0 z-40" : "hidden md:flex",
         )}
       >
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center gap-3">
-          <div className="w-40 h-17 flex items-center justify-center overflow-hidden">
+          <div className="w-38 h-11 flex items-center justify-center overflow-hidden">
           <Image
             src="/images/sage_healthy_rcm_logo.png"
             alt="Sage Healthy Logo"

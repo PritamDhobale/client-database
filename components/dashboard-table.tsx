@@ -13,7 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 // Sanitize function to handle missing or default values (N/A)
 const sanitizeValue = (value: unknown): string => {
   if (value === null || value === undefined || value === "N/A" || value === "") {
-    return "Not Available";  // You can return an empty string or another default value
+    return " ";  // You can return an empty string or another default value
   }
   return String(value); // Convert any value to string
 }
@@ -97,7 +97,7 @@ export function DashboardTable() {
                 <TableCell className="font-medium">{client.id}</TableCell>
                 <TableCell>{client.practice_name}</TableCell>
                 <TableCell className="hidden md:table-cell">
-                  {`${sanitizeValue(client.primary_contact_title)} ${sanitizeValue(client.primary_contact_first_name)} ${sanitizeValue(client.primary_contact_last_name)}`}
+                  {`${sanitizeValue(client.primary_contact_first_name)} ${sanitizeValue(client.primary_contact_last_name)}, ${sanitizeValue(client.primary_contact_title)}`}
                 </TableCell>
                 <TableCell className="hidden md:table-cell">{sanitizeValue(client.email)}</TableCell>
                 <TableCell className="hidden md:table-cell">{sanitizeValue(client.state)}</TableCell>

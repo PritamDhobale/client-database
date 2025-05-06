@@ -458,9 +458,9 @@ console.log("Filtered clients data:", filteredClients);
     {sanitizeValue(`${client.primary_contact_first_name ?? ""} ${client.primary_contact_last_name ?? ""},  ${client.primary_contact_title ?? ""}`)}
   </TableCell>
   <TableCell className="hidden md:table-cell">{sanitizeValue(client.email)}</TableCell>
-  <TableCell className="hidden md:table-cell">{sanitizeValue(client.primary_contact_phone)}</TableCell>
+  <TableCell className="hidden md:table-cell whitespace-nowrap">{sanitizeValue(client.primary_contact_phone)}</TableCell>
   <TableCell className="hidden md:table-cell">{sanitizeValue(client.state)}</TableCell>
-  <TableCell className="hidden md:table-cell">{sanitizeValue(client.category?.category_name || "Not Available")}</TableCell>  <TableCell className="text-right">
+  <TableCell className="hidden md:table-cell">0{sanitizeValue(client.category_id || "Not Available")}</TableCell>  <TableCell className="text-right">
 
                       <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                         <FileUploadDialog clientId={client.client_id} clientName={client.practice_name} />

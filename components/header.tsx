@@ -41,7 +41,7 @@ export default function Header() {
   }
 
   return (
-    <header className="bg-white border-b border-gray-200 py-3 px-6 flex items-center justify-between">
+    <header className="bg-white border-b border-gray-200 py-3 px-6 h-18 flex items-center justify-between">
       <div className="text-sm text-gray-600">
         <p className="font-medium">{formattedDate}</p>
         <p>{formattedTime}</p>

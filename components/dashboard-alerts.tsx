@@ -1,34 +1,55 @@
 import { AlertTriangle, Clock } from "lucide-react"
+import { useEffect, useState } from "react"
+import { supabase } from "@/lib/supabaseClient"
 import { Badge } from "@/components/ui/badge"
 
-const alerts = [
-  {
-    id: 1,
-    client: "Sunshine Medical Group",
-    expiryDate: "2025-05-15",
-    daysRemaining: 30,
-  },
-  {
-    id: 2,
-    client: "Westside Healthcare",
-    expiryDate: "2025-05-05",
-    daysRemaining: 20,
-  },
-  {
-    id: 3,
-    client: "Northpark Physicians",
-    expiryDate: "2025-04-25",
-    daysRemaining: 10,
-  },
-  {
-    id: 4,
-    client: "Eastside Medical Center",
-    expiryDate: "2025-04-17",
-    daysRemaining: 2,
-  },
-]
+interface AlertItem {
+  id: string | number;
+  client: string;
+  expiryDate: string;
+  daysRemaining: number;
+}
+
+
 
 export function DashboardAlerts() {
+
+  const [alerts, setAlerts] = useState<AlertItem[]>([]);
+
+  useEffect(() => {
+    const fetchExpiryAlerts = async () => {
+      const today = new Date();
+      const in30Days = new Date();
+      in30Days.setDate(today.getDate() + 30);
+  
+      const { data, error } = await supabase
+        .from("agreements")
+        .select("end_date, clients:client_id(practice_name)")
+        .gte("end_date", today.toISOString())
+        .lte("end_date", in30Days.toISOString());
+  
+      if (error) {
+        console.error("Failed to fetch expiry alerts:", error);
+        return;
+      }
+  
+      const alertsData = data.map((agreement: any) => {
+        const end = new Date(agreement.end_date);
+        const daysRemaining = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        return {
+          id: agreement.agreement_id || Math.random(), // fallback if no id
+          client: agreement.clients?.practice_name || "Unknown Client",
+          expiryDate: agreement.end_date,
+          daysRemaining,
+        };
+      });
+  
+      setAlerts(alertsData.sort((a, b) => a.daysRemaining - b.daysRemaining));
+    };
+  
+    fetchExpiryAlerts();
+  }, []);
+  
   return (
     <div className="space-y-4">
       {alerts.length === 0 ? (

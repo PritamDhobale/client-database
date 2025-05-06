@@ -340,7 +340,7 @@ const handleSaveService = (updatedService: any) => {
               <TableHead>Client ID</TableHead>
               <TableHead>Practice Name</TableHead>
           
-              <TableHead>Services</TableHead>
+              <TableHead></TableHead>
               <TableHead>NPP Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -360,7 +360,7 @@ const handleSaveService = (updatedService: any) => {
         </TableCell>
         <TableCell>{clientData.clientId}</TableCell>
         <TableCell>{clientData.practiceName}</TableCell>
-        <TableCell>-</TableCell>
+        <TableCell></TableCell>
         <TableCell className="hidden md:table-cell">
           {clientData.services.map((service: any) => (
             <div key={service.client_service_id}>
@@ -408,6 +408,8 @@ const handleSaveService = (updatedService: any) => {
                       <div>{service.services[0]?.serviceName || "Unknown"}</div>
                       <div className="text-gray-500">Rate:</div>
                       <div>{service.rate}</div>
+                      <div className="text-gray-500">Minimum:</div>
+                      <div>{service.minimum}</div>
                       <div className="text-gray-500">NPP Status:</div>
                       <div>{service.nppStatus}</div>
                       <div className="text-gray-500">Notes:</div>

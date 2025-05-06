@@ -13,7 +13,7 @@ export default function ReportsPage() {
           <TabsTrigger value="client">Client Reports</TabsTrigger>
           <TabsTrigger value="agreement">Agreement Reports</TabsTrigger>
           <TabsTrigger value="service">Service Reports</TabsTrigger>
-          <TabsTrigger value="financial">Financial Reports</TabsTrigger>
+          {/* <TabsTrigger value="financial">Financial Reports</TabsTrigger> */}
         </TabsList>
 
         <TabsContent value="client" className="mt-4">
@@ -52,7 +52,7 @@ export default function ReportsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="financial" className="mt-4">
+        {/* <TabsContent value="financial" className="mt-4">
           <Card>
             <CardHeader>
               <CardTitle>Financial Reports</CardTitle>
@@ -62,7 +62,7 @@ export default function ReportsPage() {
               <ReportsGenerator type="financial" />
             </CardContent>
           </Card>
-        </TabsContent>
+        </TabsContent> */}
       </Tabs>
     </div>
   )

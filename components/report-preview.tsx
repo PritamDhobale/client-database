@@ -279,22 +279,22 @@ export function ReportPreview({
           <div className="flex justify-between items-center mb-4">
             <TabsList>
               <TabsTrigger value="preview">Preview</TabsTrigger>
-              <TabsTrigger value="json">JSON</TabsTrigger>
+              {/* <TabsTrigger value="json">JSON</TabsTrigger> */}
             </TabsList>
 
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" disabled={!reportData || isLoading}>
+              {/* <Button variant="outline" size="sm" disabled={!reportData || isLoading}>
                 <Printer className="h-4 w-4 mr-1" />
                 Print
               </Button>
               <Button variant="outline" size="sm" disabled={!reportData || isLoading}>
                 <FileSpreadsheet className="h-4 w-4 mr-1" />
                 CSV
-              </Button>
-              <Button disabled={!reportData || isLoading}>
+              </Button> */}
+              {/* <Button disabled={!reportData || isLoading}>
                 <Download className="h-4 w-4 mr-1" />
                 PDF
-              </Button>
+              </Button> */}
             </div>
           </div>
 

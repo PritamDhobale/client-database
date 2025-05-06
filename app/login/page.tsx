@@ -60,13 +60,24 @@ export default function LoginPage() {
 
   return (
     <div className="login-page">
-      <div className="top-right">
+      {/* <div className="top-right">
         POWERED BY <span className="hubone">HUBONE SYSTEMS</span>
-      </div>
+      </div> */}
       {/* Displaying the Mysage logo */}
-      <img src="/images/sage_healthy_rcm_logo.png" alt="mySAGE Logo" className="mysage-logo" />
+      <div className="logo-wrapper">
+  <img src="/images/sage_healthy_rcm_logo.png" alt="mySAGE Logo" className="mysage-logo" />
+      <div className="powered-by-text">
+        <div className="logo-size">
+        POWERED BY
+        </div>
+      <div className="hubone">
+        HUBONE SYSTEMS
+      </div>
+      </div>
+    </div>
+
       <div className="login-box">
-        <h2 className="login-heading">Client Database</h2>
+        <h2 className="login-heading">AccountsHub</h2>
         <form onSubmit={handleSubmit} style={{ width: "100%" }}>
           <label>Email Address</label>
           <input
@@ -87,7 +98,14 @@ export default function LoginPage() {
             {isLoading ? "Logging in..." : "LOG IN"}
           </button>
         </form>
+
+        
       </div>
+
+       {/* ✅ Footer */}
+    <p className="footer-text">
+      © 2014–2025 HubOne Systems Inc. – All Rights Reserved
+    </p>
     </div>
   )
 }

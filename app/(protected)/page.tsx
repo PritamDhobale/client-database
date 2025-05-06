@@ -163,8 +163,29 @@ export default function Dashboard() {
       </div>
 
       {/* Charts and Tables */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <Card className="lg:col-span-1">
+    <CardHeader>
+      <CardTitle>Client Categories</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <DashboardChart />
+    </CardContent>
+  </Card>
+
+  <Card className="lg:col-span-1">
+    <CardHeader className="flex flex-row items-center justify-between">
+      <CardTitle>Contract Expiry Alerts</CardTitle>
+      <AlertTriangle className="h-4 w-4 text-amber-500" />
+    </CardHeader>
+    <CardContent>
+      <DashboardAlerts />
+    </CardContent>
+  </Card>
+</div>
+
+      {/* <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle>Client Categories</CardTitle>
           </CardHeader>
@@ -173,7 +194,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-1">
+        <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Contract Expiry Alerts</CardTitle>
             <AlertTriangle className="h-4 w-4 text-amber-500" />
@@ -182,7 +203,7 @@ export default function Dashboard() {
             <DashboardAlerts />
           </CardContent>
         </Card>
-      </div>
+      </div> */}
 
       {/* Client Data Table */}
       <Card>

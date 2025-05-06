@@ -239,9 +239,9 @@ export function ReportsGenerator({ type }: ReportsGeneratorProps) {
           <TabsTrigger value="preview" disabled={!reportData}>
             Preview Report
           </TabsTrigger>
-          <TabsTrigger value="schema" onClick={() => setShowSchemaReference(true)}>
+          {/* <TabsTrigger value="schema" onClick={() => setShowSchemaReference(true)}>
             Schema Reference
-          </TabsTrigger>
+          </TabsTrigger> */}
         </TabsList>
  
         <TabsContent value="generate" className="space-y-6 mt-4">
@@ -308,7 +308,7 @@ export function ReportsGenerator({ type }: ReportsGeneratorProps) {
                     <SelectValue placeholder="Select format" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="pdf">PDF</SelectItem>
+                    {/* <SelectItem value="pdf">PDF</SelectItem> */}
                     <SelectItem value="csv">CSV</SelectItem>
                     <SelectItem value="excel">Excel</SelectItem>
                   </SelectContent>
@@ -407,7 +407,7 @@ export function ReportsGenerator({ type }: ReportsGeneratorProps) {
             </div>
           </div>
  
-          {reportData && (
+          {/* {reportData && (
             <div className="flex justify-end space-x-2">
               <Button variant="outline" onClick={clearReport}>
                 Clear Report
@@ -417,7 +417,7 @@ export function ReportsGenerator({ type }: ReportsGeneratorProps) {
                 View Report
               </Button>
             </div>
-          )}
+          )} */}
         </TabsContent>
  
         <TabsContent value="preview" className="mt-4">
@@ -438,10 +438,10 @@ export function ReportsGenerator({ type }: ReportsGeneratorProps) {
               <FileSpreadsheet className="mr-2 h-4 w-4" />
               Export as CSV
             </Button>
-            <Button onClick={exportReportToPDF}>
+            {/* <Button onClick={exportReportToPDF}>
               <Download className="mr-2 h-4 w-4" />
               Download PDF
-            </Button>
+            </Button> */}
             <Button onClick={exportReportToExcel}>
               <Download className="mr-2 h-4 w-4" />
               Download Excel

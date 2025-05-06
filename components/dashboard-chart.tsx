@@ -12,7 +12,7 @@ const categoryNames = {
   "CORPORATE ADVISORY": "Corporate Advisory",
 }
 
-const COLORS = ["#91C848", "#36A2EB", "#FFCE56", "#FF6384"]
+const COLORS = ["#C9E4A4", "#FAC086", "#DAAAE4", "#A7DCF7"]
 
 export function DashboardChart() {
   const [chartData, setChartData] = useState<any[]>([])
@@ -28,7 +28,6 @@ export function DashboardChart() {
         return
       }
 
-      // Process data to count clients by category
       const categoryCounts = data?.reduce((acc: any, client: any) => {
         const categoryName = client.category?.category_name || "Other"
         if (acc[categoryName]) {
@@ -40,15 +39,43 @@ export function DashboardChart() {
       }, {})
 
       const chartData = Object.keys(categoryCounts).map((category) => ({
-        name: categoryNames[category as keyof typeof categoryNames] || category, // Use shortened category names
+        name: categoryNames[category as keyof typeof categoryNames] || category,
         value: categoryCounts[category],
       }))
-      
+
       setChartData(chartData)
     }
 
     fetchCategoryData()
   }, [])
+
+  // ✅ Custom label with font size and positioning
+  const renderCustomizedLabel = ({
+    cx,
+    cy,
+    midAngle,
+    innerRadius,
+    outerRadius,
+    percent,
+  }: any) => {
+    const RADIAN = Math.PI / 180
+    const radius = innerRadius + (outerRadius - innerRadius) * 1.15
+    const x = cx + radius * Math.cos(-midAngle * RADIAN)
+    const y = cy + radius * Math.sin(-midAngle * RADIAN)
+
+    return (
+      <text
+        x={x}
+        y={y}
+        fill="#000"
+        textAnchor="middle"
+        dominantBaseline="central"
+        fontSize={13} // You can adjust this
+      >
+        {`${(percent * 100).toFixed(0)}%`}
+      </text>
+    )
+  }
 
   return (
     <div className="h-[300px] w-full">
@@ -59,10 +86,10 @@ export function DashboardChart() {
             cx="50%"
             cy="50%"
             labelLine={false}
-            outerRadius={80}
+            outerRadius={100}
             fill="#8884d8"
             dataKey="value"
-            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} // No need for multi-line, keep horizontal
+            label={renderCustomizedLabel} // ✅ Apply custom label
           >
             {chartData.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -70,10 +97,10 @@ export function DashboardChart() {
           </Pie>
           <Tooltip />
           <Legend
-            layout="horizontal" // Change layout to horizontal to keep it neat
+            layout="horizontal"
             align="center"
             verticalAlign="bottom"
-            wrapperStyle={{ width: '100%', paddingBottom: '10px' }} // Adjust legend positioning
+            wrapperStyle={{ width: '100%', paddingBottom: '10px', fontSize: '14px' }}
           />
         </PieChart>
       </ResponsiveContainer>

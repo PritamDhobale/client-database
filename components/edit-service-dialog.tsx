@@ -23,11 +23,11 @@ interface ServiceDetails {
   services: {
     serviceName: string;
     rate: string;
-    nppStatus: boolean;
+    nppStatus: string;
   }[]; // Ensure services is an array of objects with these properties
   rate: string;
   minimum: string;
-  nppStatus: boolean;
+  nppStatus: string;
   notes: string;
 }
 
@@ -121,14 +121,15 @@ export function EditServiceDialog({ service, trigger, onSave }: EditServiceDialo
             />
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="space-y-2">
             <Label htmlFor="nppStatus" className="cursor-pointer">
               NPP Status
             </Label>
-            <Switch
+            <Input
               id="nppStatus"
-              checked={formData.nppStatus}
-              onCheckedChange={(checked) => handleChange("nppStatus", checked)}
+              value={formData.nppStatus}
+              onChange={(e) => handleChange("nppStatus", e.target.value)}
+              placeholder="Not Available"
             />
           </div>
 

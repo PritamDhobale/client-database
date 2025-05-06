@@ -1,4 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useAuthGuard } from "@/hooks/useAuthGuard"
 import { ClientsTable } from "@/components/clients-table"
 import { NewClientForm } from "@/components/new-client-form"
 

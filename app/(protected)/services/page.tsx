@@ -1,5 +1,6 @@
 import { ServicesTable } from "@/components/services-table"
 import { supabase } from "@/lib/supabaseClient"
+import { useAuthGuard } from "@/hooks/useAuthGuard"
 
 export default function ServicesPage() {
   return (

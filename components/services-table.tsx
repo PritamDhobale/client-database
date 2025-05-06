@@ -108,11 +108,11 @@ export function ServicesTable() {
           clientId: service.client_id,
           practiceName: client ? client.practice_name : "Unknown",
           services: [{
-            serviceName: service.services?.[0]?.service_name || "Unknown",
+            serviceName: service.services?.service_name || "Unknown",
             rate: service.rate,
             nppStatus: service.npp_status,
             notes: service.notes,
-          }],
+          }],          
           rate: service.rate,
           minimum: service.minimum,
           nppStatus: service.npp_status,
@@ -405,7 +405,7 @@ const handleSaveService = (updatedService: any) => {
                   {clientData.services.map((service: any) => (
                     <div key={service.client_service_id} className="grid grid-cols-2 gap-2">
                       <div className="text-gray-500">Service Name:</div>
-                      <div>{clientData.serviceName}</div>
+                      <div>{service.services[0]?.serviceName || "Unknown"}</div>
                       <div className="text-gray-500">Rate:</div>
                       <div>{service.rate}</div>
                       <div className="text-gray-500">NPP Status:</div>

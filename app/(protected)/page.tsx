@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabaseClient"
 import { DashboardChart } from "@/components/dashboard-chart"
 import { DashboardTable } from "@/components/dashboard-table"
 import { DashboardAlerts } from "@/components/dashboard-alerts"
+import { useAuthGuard } from "@/hooks/useAuthGuard"
 
 export default function Dashboard() {
   const [totalClients, setTotalClients] = useState(0)
@@ -163,7 +164,7 @@ export default function Dashboard() {
 
       {/* Charts and Tables */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-1">
+        <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Client Categories</CardTitle>
           </CardHeader>
@@ -172,7 +173,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-1">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Contract Expiry Alerts</CardTitle>
             <AlertTriangle className="h-4 w-4 text-amber-500" />

@@ -58,6 +58,23 @@
     category_name: string
     client_status: string
   }
+
+  const exportToCSV = (data: any[], filename: string) => {
+    const headers = Object.keys(data[0] || {});
+    const rows = data.map((row) =>
+      headers.map((field) => `"${(row[field] ?? "").toString().replace(/"/g, '""')}"`).join(",")
+    );
+    const csvContent = [headers.join(","), ...rows].join("\n");
+  
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
   
 
   
@@ -278,7 +295,7 @@ console.log("Filtered clients data:", filteredClients);
           <div className="flex items-center gap-2">
             <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="flex items-center gap-2">
+                {/* <Button variant="outline" className="flex items-center gap-2">
                   <Filter className="h-4 w-4" />
                   <span>Filters</span>
                   {activeFilters.length > 0 && (
@@ -286,7 +303,7 @@ console.log("Filtered clients data:", filteredClients);
                       {activeFilters.length}
                     </Badge>
                   )}
-                </Button>
+                </Button> */}
               </PopoverTrigger>
               <PopoverContent className="w-[340px] p-0" align="end">
                 <Card>
@@ -376,10 +393,14 @@ console.log("Filtered clients data:", filteredClients);
               </PopoverContent>
             </Popover>
 
-            <Button variant="outline">
-              <Download className="mr-2 h-4 w-4" />
-              Export
-            </Button>
+            <Button
+  variant="outline"
+  onClick={() => exportToCSV(filteredClients, "clients_export.csv")}
+>
+  <Download className="mr-2 h-4 w-4" />
+  Export
+</Button>
+
           </div>
         </div>
 

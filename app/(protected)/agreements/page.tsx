@@ -1,4 +1,5 @@
 import { AgreementsTable } from "@/components/agreements-table"
+import { useAuthGuard } from "@/hooks/useAuthGuard"
 
 export default function AgreementsPage() {
   return (

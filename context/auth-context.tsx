@@ -3,7 +3,8 @@
 import type React from "react"
 import { createContext, useContext, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import type { AuthState, User } from "@/types/auth"
+import { supabase } from "@/lib/supabaseClient" // Import Supabase client
+import type { AuthState, User } from "@/types/auth" // Import types
 
 interface AuthContextType extends AuthState {
   login: (user: User) => void
@@ -22,59 +23,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
 
   useEffect(() => {
-    // Check if user is already authenticated
-    // For demo purposes, we'll check localStorage
-    // In a real app, this would be an API call to check the session
-    const storedUser = localStorage.getItem("auth_user")
+    // Check if user is already authenticated from Supabase session
+    const checkUserSession = async () => {
+      const { data, error } = await supabase.auth.getSession() // Fix for session
 
-    if (storedUser) {
-      try {
-        const user = JSON.parse(storedUser)
+      if (data && data.session?.user) {
+        // If user data exists in session, map it to your User type
+        const user: User = {
+          id: data.session.user.id,
+          username: data.session.user.email || "",  // Fallback to empty string if email is undefined
+          name: data.session.user.user_metadata?.full_name || "Unknown", // Fallback if full_name is undefined
+          role: "user",  // Default role, adjust as per your logic
+          email: data.session.user.email || "", // Fallback to empty string if email is undefined
+        }        
+
         setState({
           user,
           isAuthenticated: true,
           isLoading: false,
         })
-      } catch (error) {
-        console.error("Failed to parse stored user:", error)
+      } else {
         setState({
           user: null,
           isAuthenticated: false,
           isLoading: false,
         })
-        localStorage.removeItem("auth_user")
       }
-    } else {
-      setState({
-        user: null,
-        isAuthenticated: false,
-        isLoading: false,
-      })
     }
+    checkUserSession()
   }, [])
 
   const login = (user: User) => {
-    // Store user in localStorage for persistence
-    localStorage.setItem("auth_user", JSON.stringify(user))
-
     setState({
       user,
       isAuthenticated: true,
       isLoading: false,
     })
+    localStorage.setItem("auth_user", JSON.stringify(user)) // Persist user in localStorage
   }
 
-  const logout = () => {
-    // Clear stored user
-    localStorage.removeItem("auth_user")
-
+  const logout = async () => {
+    await supabase.auth.signOut() // Supabase logout
     setState({
       user: null,
       isAuthenticated: false,
       isLoading: false,
     })
-
-    router.push("/login")
+    localStorage.removeItem("auth_user") // Clear localStorage
+    router.push("/login") // Redirect to login page after logging out
   }
 
   return <AuthContext.Provider value={{ ...state, login, logout }}>{children}</AuthContext.Provider>

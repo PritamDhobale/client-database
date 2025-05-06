@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ReportsGenerator } from "@/components/reports-generator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useAuthGuard } from "@/hooks/useAuthGuard"
 
 export default function ReportsPage() {
   return (

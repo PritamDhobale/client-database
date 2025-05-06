@@ -55,7 +55,7 @@ interface Client {
     term: "",
     service_name: "",
     id: "",
-    services: string[]; // This is important
+    service_id: []; // This is important
     }
 
 // List of US states for the dropdown
@@ -153,19 +153,17 @@ export function NewClientForm() {
     agreement_date: "",
     commencement_date: "",
     term: "",
-    service_name: "",
-    id: "",
-    services: [] as string[],  // Ensure services is typed as an array of strings (string[])
+    service_ids: [] as string[],
+  // Ensure services is typed as an array of strings (string[])
   })
   
-  
-
   const handleChange = (field: string, value: any) => {
     setFormData({
       ...formData,
-      [field]: value, // This will correctly handle both single values and arrays
+      [field]: value,  // Directly update the field with the selected value
     });
   };
+  
 
   useEffect(() => {
     const fetchServices = async () => {
@@ -179,86 +177,27 @@ export function NewClientForm() {
     fetchServices();
   }, []);
 
-
-  // const handleSubmit = async () => {
-  //   setSaving(true)
-  //   try {
-  //     const payload = {
-  //       ...formData,
-  //       zip: Number(formData.zip || 0),
-  //       created_at: new Date().toISOString(),
-  //       // client_status: "active"
-  //     }
-  
-  //     console.log("Payload being sent:", payload)
-  
-  //     const { data, error } = await supabase
-  //       .from("Clients")
-  //       .insert([payload])
-  //       .select("*")
-  
-  //     if (error) {
-  //       console.error("❌ Failed to add client:", error)
-  //     } else {
-  //       console.log("✅ Client added:", data)
-  //       setOpen(false)
-  //       // Reset formData to blank values
-  //       setFormData({
-  //         practice_name: "",
-  //         dba: "",
-  //         code: "",
-  //         client_status: "",
-  //         sla_number: "",
-  //         primary_contact_title: "",
-  //         primary_contact_first_name: "",
-  //         primary_contact_last_name: "",
-  //         primary_contact_email: "",
-  //         primary_contact_phone: "",
-  //         email: "",
-  //         admin_contact_first_name: "",
-  //         admin_contact_last_name: "",
-  //         admin_contact_phone: "",
-  //         admin_contact_title: "",
-  //         admin_contact_email: "",
-  //         authorized_rep_first_name: "",
-  //         authorized_rep_last_name: "",
-  //         authorized_rep_phone: "",
-  //         authorized_rep_title: "",
-  //         authorized_rep_email: "",
-  //         city: "",
-  //         state: "",
-  //         state_of_formation: "",
-  //         street_address: "",
-  //         current_ehr: "",
-  //         category_id: "",
-  //         type_of_entity: "",
-  //         website: "",
-  //         zip: "",
-  //         agreement_date: "",
-  //         commencement_date: "",
-  //         term: "",
-  //         service_name: "",
-  //         id: "",
-  //         services: []
-  //       })
-  //     }
-  //   } catch (err) {
-  //     console.error("Unexpected error while adding client:", err)
-  //   } finally {
-  //     setSaving(false)
-  //   }
-  // }
   const handleSubmit = async () => {
     setSaving(true);
     try {
+      // ✅ STEP 1: Remove non-Client fields
+      const {
+        agreement_date,
+        commencement_date,
+        term,
+        service_ids, // ✅ Destructure this out too
+        ...clientData
+      } = formData;
+  
       const payload = {
-        ...formData,
+        ...clientData,
         zip: Number(formData.zip || 0),
         created_at: new Date().toISOString(),
       };
   
       console.log("Payload being sent:", payload);
   
+      // ✅ STEP 2: Insert into Clients
       const { data, error } = await supabase
         .from("Clients")
         .insert([payload])
@@ -266,76 +205,87 @@ export function NewClientForm() {
   
       if (error) {
         console.error("Failed to add client:", error);
-      } else {
-        console.log("Client added:", data);
-  
-        // Insert selected services into client_services
-        const clientId = data[0].client_id; // Assuming the client_id is returned from the insert
-        const servicesToAdd = formData.services.map((serviceId: string) => ({
-          client_id: clientId,
-          service_id: serviceId, // service_id is stored as varchar in services table
-        }));
-  
-        const { error: serviceError } = await supabase
-          .from("client_services")
-          .upsert(servicesToAdd);
-  
-        if (serviceError) {
-          console.error("Failed to add services:", serviceError);
-        } else {
-          console.log("Services added:", servicesToAdd);
-        }
-  
-        setOpen(false);
-  
-        // Reset formData after successful submit
-        setFormData({
-          practice_name: "",
-          dba: "",
-          code: "",
-          client_status: "",
-          sla_number: "",
-          primary_contact_title: "",
-          primary_contact_first_name: "",
-          primary_contact_last_name: "",
-          primary_contact_email: "",
-          primary_contact_phone: "",
-          email: "",
-          admin_contact_first_name: "",
-          admin_contact_last_name: "",
-          admin_contact_phone: "",
-          admin_contact_title: "",
-          admin_contact_email: "",
-          authorized_rep_first_name: "",
-          authorized_rep_last_name: "",
-          authorized_rep_phone: "",
-          authorized_rep_title: "",
-          authorized_rep_email: "",
-          city: "",
-          state: "",
-          state_of_formation: "",
-          street_address: "",
-          current_ehr: "",
-          category_id: "",
-          type_of_entity: "",
-          website: "",
-          zip: "",
-          agreement_date: "",
-          commencement_date: "",
-          term: "",
-          service_name: "",
-          id: "",
-          services: [] as string[],  // Ensure services is typed as an array of strings (string[])
-        });
+        return;
       }
+  
+      const clientId = data[0].client_id;
+  
+      // ✅ STEP 3: Insert agreement
+      const agreementPayload = {
+        client_id: clientId,
+        agreement_date,
+        commencement_date,
+        term,
+        created_at: new Date().toISOString(),
+      };
+  
+      const { error: agreementError } = await supabase
+        .from("agreements")
+        .insert([agreementPayload]);
+  
+      if (agreementError) {
+        console.error("Failed to add agreement:", agreementError);
+        return;
+      }
+  
+      // ✅ STEP 4: Insert services
+      const servicesToAdd = service_ids.map((serviceId: string) => ({
+        client_id: clientId,
+        id: serviceId, // ✅ Foreign key to services.id
+      }));
+  
+      const { error: serviceError } = await supabase
+        .from("client_services")
+        .upsert(servicesToAdd);
+  
+      if (serviceError) {
+        console.error("Failed to add services:", serviceError);
+      }
+  
+      // ✅ STEP 5: Reset form
+      setOpen(false);
+      setFormData({
+        practice_name: "",
+        dba: "",
+        code: "",
+        client_status: "",
+        sla_number: "",
+        primary_contact_title: "",
+        primary_contact_first_name: "",
+        primary_contact_last_name: "",
+        primary_contact_email: "",
+        primary_contact_phone: "",
+        email: "",
+        admin_contact_first_name: "",
+        admin_contact_last_name: "",
+        admin_contact_phone: "",
+        admin_contact_title: "",
+        admin_contact_email: "",
+        authorized_rep_first_name: "",
+        authorized_rep_last_name: "",
+        authorized_rep_phone: "",
+        authorized_rep_title: "",
+        authorized_rep_email: "",
+        city: "",
+        state: "",
+        state_of_formation: "",
+        category_id: "",
+        street_address: "",
+        current_ehr: "",
+        type_of_entity: "",
+        website: "",
+        zip: "",
+        agreement_date: "",
+        commencement_date: "",
+        term: "",
+        service_ids: [],
+      });
     } catch (err) {
       console.error("Unexpected error while adding client:", err);
     } finally {
       setSaving(false);
     }
-  };
-  
-  
+  };  
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -570,34 +520,34 @@ export function NewClientForm() {
               <div className="space-y-2">
                 <Label htmlFor="state">State *</Label>
                 <Select value={formData.state} onValueChange={(value) => handleChange("state", value)}>
-                  <SelectTrigger id="state">
-                    <SelectValue placeholder="Select state" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {US_STATES.map((state) => (
-                      <SelectItem key={state} value={state}>
-                        {state}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+  <SelectTrigger id="state">
+    <SelectValue placeholder="Select state" />
+  </SelectTrigger>
+  <SelectContent>
+    {US_STATES.map((state) => (
+      <SelectItem key={state} value={state}>
+        {state}
+      </SelectItem>
+    ))}
+  </SelectContent>
+</Select>
               </div>
             </div>
 
             <div className="space-y-2">
                 <Label htmlFor="state_of_formation">State of Formation *</Label>
                 <Select value={formData.state_of_formation} onValueChange={(value) => handleChange("state_of_formation", value)}>
-                  <SelectTrigger id="state_of_formation">
-                    <SelectValue placeholder="Select state" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {US_STATES.map((state_of_formation) => (
-                      <SelectItem key={state_of_formation} value={state_of_formation}>
-                        {state_of_formation}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+  <SelectTrigger id="state_of_formation">
+    <SelectValue placeholder="Select state of formation" />
+  </SelectTrigger>
+  <SelectContent>
+    {US_STATES.map((state) => (
+      <SelectItem key={state} value={state}>
+        {state}
+      </SelectItem>
+    ))}
+  </SelectContent>
+</Select>
               </div>
             </div>
 
@@ -634,26 +584,22 @@ export function NewClientForm() {
                 />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="services">Services</Label>
-              <Select
-                value={formData.services} // This should be an array of selected service IDs (string[])
-                onValueChange={(value: string | string[]) => {
-                  // Ensure the value is an array of strings
-                  handleChange("services", Array.isArray(value) ? value : [value]);
-                }}
-                multiple // Enable multi-selection
-              >
-                <SelectTrigger id="services">
-                  <SelectValue placeholder="Select services" />
-                </SelectTrigger>
-                <SelectContent>
-                  {services.map((service) => (
-                    <SelectItem key={service.id} value={service.id}>
-                      {service.service_name} {/* Display service name */}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <Label htmlFor="services">Services</Label>
+                <Select
+                  value={formData.service_ids[0] || ""}
+                  onValueChange={(value: string) => handleChange("service_ids", [value])}
+                >
+                  <SelectTrigger id="services">
+                    <SelectValue placeholder="Select a service" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {services.map((service) => (
+                      <SelectItem key={service.id} value={service.id}>
+                        {service.service_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
             </div>
             
             <div className="space-y-2">

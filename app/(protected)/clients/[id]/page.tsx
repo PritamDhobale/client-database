@@ -1,6 +1,7 @@
 "use client"
 import { supabase } from "@/lib/supabaseClient"
 import { useEffect, useState } from "react"
+import { useAuthGuard } from "@/hooks/useAuthGuard"
 import { useParams } from "next/navigation"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"

@@ -1,5 +1,5 @@
 "use client"
-
+import { useAuthGuard } from "@/hooks/useAuthGuard"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabaseClient"
@@ -27,6 +27,7 @@ interface Client {
   sla_number: string;
   primary_contact_title: string;
   primary_contact_phone: string;
+  primary_contact_email: string;
   admin_contact_first_name: string;
   admin_contact_last_name: string;
   admin_contact_phone: string;
@@ -44,6 +45,7 @@ interface Client {
   type_of_entity: string;
   website: string;
   zip: string;
+  notes: string;
 }
 
 // List of US states for the dropdown

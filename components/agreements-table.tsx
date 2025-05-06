@@ -78,6 +78,7 @@ export function AgreementsTable() {
     }))
   }
 
+
   const groupedAgreements = agreements.reduce((acc: Record<string, any>, agreement: any) => {
     const client_id = agreement.client_id
 
@@ -139,11 +140,36 @@ export function AgreementsTable() {
       clientId,
     }))
 
-  const handleRenewAgreement = (agreementId: string, startDate: string, term: string) => {
-    // In a real app, this would be an API call to renew the agreement
-    console.log(`Renewing agreement ${agreementId} from ${startDate} with term ${term}`)
-    // After successful renewal, you would refresh the agreements list
-  }
+    const handleRenewAgreement = async (agreementId: string, currentEndDate: string, term: string) => {
+      const parsedTerm = parseInt(term);
+      const isYear = term.toLowerCase().includes("year");
+    
+      const newStartDate = new Date(currentEndDate);
+      const newEndDate = new Date(newStartDate);
+    
+      if (isYear) {
+        newEndDate.setFullYear(newEndDate.getFullYear() + parsedTerm);
+      } else {
+        newEndDate.setMonth(newEndDate.getMonth() + parsedTerm);
+      }
+    
+      const { error } = await supabase
+        .from("agreements")
+        .update({
+          agreement_date: newStartDate.toISOString(),
+          end_date: newEndDate.toISOString(),
+        })
+        .eq("agreement_id", agreementId);
+    
+      if (error) {
+        console.error("Renewal failed:", error);
+      } else {
+        console.log("Renewed successfully");
+        // optionally refetch agreements
+      }
+    };
+    
+    
   
   const handleExport = (columns: string[], format: string) => {
     // In a real app, this would be an API call to generate the export
@@ -163,10 +189,10 @@ export function AgreementsTable() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline">
+          {/* <Button variant="outline">
             <FileText className="mr-2 h-4 w-4" />
             New Agreement
-          </Button>
+          </Button> */}
           <ExportAgreementsDialog onExport={(columns, format) => console.log(`Exporting agreements with columns: ${columns}, format: ${format}`)} />
         </div>
       </div>
@@ -214,7 +240,6 @@ export function AgreementsTable() {
                         onRenew={handleRenewAgreement}
                       />
 
-
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="h-8 w-8 p-0">
@@ -249,13 +274,13 @@ export function AgreementsTable() {
                           {clientData.agreements.map((agreement: AgreementDetails, index: number) => (
                           <div key={agreement.agreement_id || index} className="grid grid-cols-2 gap-2">
                             <div className="text-gray-500">Agreement Date:</div>
-                            <div>{new Date(agreement.agreement_date).toLocaleDateString()}</div>
+                            <div>{agreement.agreement_date ? new Date(agreement.agreement_date).toLocaleDateString() : "N/A"}</div>
                             <div className="text-gray-500">Commencement Date:</div>
-                            <div>{new Date(agreement.commencement_date).toLocaleDateString()}</div>
+                            <div>{agreement.commencement_date ? new Date(agreement.commencement_date).toLocaleDateString() : "N/A"}</div>
                             <div className="text-gray-500">Term:</div>
                             <div>{agreement.term}</div>
                             <div className="text-gray-500">End Date:</div>
-                            <div>{new Date(agreement.end_date).toLocaleDateString()}</div>
+                            <div>{agreement.end_date ? new Date(agreement.end_date).toLocaleDateString() : "N/A"}</div>
                             <p>------------------------------------------------------</p>
                             <Separator />
                           </div>

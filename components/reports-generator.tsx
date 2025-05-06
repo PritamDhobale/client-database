@@ -1,5 +1,5 @@
 "use client"
-
+ 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,12 +16,12 @@ import "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import Papa from "papaparse";
-
-
+ 
+ 
 interface ReportsGeneratorProps {
   type: "client" | "agreement" | "service" | "financial"
 }
-
+ 
 // Report types based on the selected category
 const reportTypes = {
   client: [
@@ -40,7 +40,7 @@ const reportTypes = {
     { id: "financial-summary", name: "Financial Summary" },
   ],
 }
-
+ 
 export function ReportsGenerator({ type }: ReportsGeneratorProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [reportFormat, setReportFormat] = useState("pdf")
@@ -55,9 +55,9 @@ export function ReportsGenerator({ type }: ReportsGeneratorProps) {
   const [reportData, setReportData] = useState<any>(null)
   const [showSchemaReference, setShowSchemaReference] = useState(false)
   const [activeTab, setActiveTab] = useState("generate")
-
+ 
   const [clients, setClients] = useState<any[]>([])
-
+ 
   // Fetch data from Supabase
   useEffect(() => {
     const fetchData = async () => {
@@ -65,21 +65,21 @@ export function ReportsGenerator({ type }: ReportsGeneratorProps) {
         const { data: clientsData, error: clientsError } = await supabase
           .from("Clients")
           .select("client_id, practice_name, primary_contact_first_name, client_status")
-
+ 
         if (clientsError) throw clientsError
-
+ 
         const { data: agreementsData, error: agreementsError } = await supabase
           .from("agreements")
           .select("agreement_id, client_id, agreement_date, end_date")
-
+ 
         if (agreementsError) throw agreementsError
-
+ 
         const { data: servicesData, error: servicesError } = await supabase
           .from("client_services")
           .select("id, client_id, services(service_name), rate, npp_status")
-
+ 
         if (servicesError) throw servicesError
-
+ 
         // Combine all data into one object
         const combinedData = clientsData.map(client => {
           const clientAgreements = agreementsData.filter(agreement => agreement.client_id === client.client_id)
@@ -90,29 +90,29 @@ export function ReportsGenerator({ type }: ReportsGeneratorProps) {
             services: clientServices,
           }
         })
-
+ 
         setClients(combinedData) // Save the combined data in state
       } catch (error) {
         console.error("Error fetching data:", error)
       }
     }
-
+ 
     fetchData()
   }, [])
-
+ 
   // Filter clients based on search term
   const filteredClients = clients.filter(
     (client) =>
       client.practice_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.client_id.toLowerCase().includes(searchTerm.toLowerCase())
   )
-
+ 
   const exportReportToPDF = () => {
     const doc = new jsPDF();
-  
+ 
     // Add Title
     doc.text("Client Report", 10, 10);
-  
+ 
     // Prepare the data
     const tableData = reportData.map((client: any) => [
       client.client_id,
@@ -120,25 +120,25 @@ export function ReportsGenerator({ type }: ReportsGeneratorProps) {
       client.primary_contact_first_name,
       client.client_status === "active" ? "Active" : "Inactive"
     ]);
-  
+ 
     // Add the table
     doc.autoTable({
       head: [["Client ID", "Practice Name", "Primary Contact", "Status"]],
       body: tableData,
     });
-  
+ 
     // Save the PDF
     doc.save("client-report.pdf");
   };
-  
-
+ 
+ 
   // Toggle client selection
   const toggleClient = (clientId: string) => {
     setSelectedClients((prev) =>
       prev.includes(clientId) ? prev.filter((id) => id !== clientId) : [...prev, clientId]
     )
   }
-
+ 
   const exportReportToCSV = () => {
     // Convert the report data into CSV
     const csvData = Papa.unparse(reportData.map((client: any) => ({
@@ -147,12 +147,12 @@ export function ReportsGenerator({ type }: ReportsGeneratorProps) {
       "Primary Contact": client.primary_contact_first_name,
       "Status": client.client_status === "active" ? "Active" : "Inactive"
     })));
-  
+ 
     // Trigger CSV download
     const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
     saveAs(blob, "client-report.csv");
   };
-
+ 
   const exportReportToExcel = () => {
     // Create a new worksheet from report data
     const ws = XLSX.utils.json_to_sheet(reportData.map((client: any) => ({
@@ -161,44 +161,41 @@ export function ReportsGenerator({ type }: ReportsGeneratorProps) {
       "Primary Contact": client.primary_contact_first_name,
       "Status": client.client_status === "active" ? "Active" : "Inactive"
     })));
-  
+ 
     // Create a workbook and add the worksheet to it
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Client Report");
-  
+ 
     // Write the Excel file and trigger download
     XLSX.writeFile(wb, "client-report.xlsx");
   };
-  
-
+ 
+ 
   // Handle report generation
   const generateReport = () => {
     if (selectedClients.length === 0) return
-
+ 
     setIsGenerating(true)
     setReportData(null)
-
+ 
     // Filter data based on selected report type
     const filteredData = clients
-    .filter((client) => selectedClients.includes(client.client_id))
-    .map((client) => ({
+    .filter(client => selectedClients.includes(client.client_id))
+    .map(client => ({
       client_id: client.client_id,
       practice_name: client.practice_name,
-      // Correcting the filtering logic for services and agreements
-      services: client.services.filter((service: { service_name: string; rate: string; npp_status: boolean }) =>
-        selectedReportType === "service-list"
-      ),
-      agreements: client.agreements.filter((agreement: { agreement_id: string; agreement_date: string; end_date: string}) =>
-        selectedReportType === "agreement-list"
-      ),
+      // ← add these two so your export helpers have the fields they expect:
+      primary_contact_first_name: client.primary_contact_first_name,
+      client_status: client.client_status,
     }));
-  
+ 
+ 
   setReportData(filteredData);
   setIsGenerating(false);
   setActiveTab("preview");
-  
+ 
   }
-
+ 
   const exportReport = () => {
     // Export to PDF, CSV, or Excel based on selected format
     switch (reportFormat) {
@@ -216,15 +213,15 @@ export function ReportsGenerator({ type }: ReportsGeneratorProps) {
         break;
     }
   };
-  
-
+ 
+ 
   // Clear report data
   const clearReport = () => {
     setReportData(null)
     setSelectedClients([])
     setSearchTerm("")
   }
-
+ 
   // Handle bulk client selection
   const handleBulkSelection = (select: boolean) => {
     if (select) {
@@ -233,7 +230,7 @@ export function ReportsGenerator({ type }: ReportsGeneratorProps) {
       setSelectedClients([])
     }
   }
-
+ 
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -246,7 +243,7 @@ export function ReportsGenerator({ type }: ReportsGeneratorProps) {
             Schema Reference
           </TabsTrigger>
         </TabsList>
-
+ 
         <TabsContent value="generate" className="space-y-6 mt-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
@@ -265,7 +262,7 @@ export function ReportsGenerator({ type }: ReportsGeneratorProps) {
                   </SelectContent>
                 </Select>
               </div>
-
+ 
               <div className="space-y-2">
                 <Label htmlFor="date-range">Date Range</Label>
                 <Select value={dateRange} onValueChange={setDateRange}>
@@ -280,7 +277,7 @@ export function ReportsGenerator({ type }: ReportsGeneratorProps) {
                   </SelectContent>
                 </Select>
               </div>
-
+ 
               {dateRange === "custom" && (
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -303,7 +300,7 @@ export function ReportsGenerator({ type }: ReportsGeneratorProps) {
                   </div>
                 </div>
               )}
-
+ 
               <div className="space-y-2">
                 <Label htmlFor="format">Report Format</Label>
                 <Select value={reportFormat} onValueChange={setReportFormat}>
@@ -317,7 +314,7 @@ export function ReportsGenerator({ type }: ReportsGeneratorProps) {
                   </SelectContent>
                 </Select>
               </div>
-
+ 
               <div className="pt-4">
                 <Button
                   onClick={generateReport}
@@ -338,7 +335,7 @@ export function ReportsGenerator({ type }: ReportsGeneratorProps) {
                 </Button>
               </div>
             </div>
-
+ 
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label>Select Clients</Label>
@@ -363,7 +360,7 @@ export function ReportsGenerator({ type }: ReportsGeneratorProps) {
                   )}
                 </div>
               </div>
-
+ 
               <div className="border rounded-md h-[350px] overflow-y-auto p-2">
                 {filteredClients.length === 0 ? (
                   <div className="text-center py-6 text-gray-500">No clients found</div>
@@ -403,13 +400,13 @@ export function ReportsGenerator({ type }: ReportsGeneratorProps) {
                   </div>
                 )}
               </div>
-
+ 
               <div className="text-sm text-gray-500">
                 {selectedClients.length} of {filteredClients.length} clients selected
               </div>
             </div>
           </div>
-
+ 
           {reportData && (
             <div className="flex justify-end space-x-2">
               <Button variant="outline" onClick={clearReport}>
@@ -422,7 +419,7 @@ export function ReportsGenerator({ type }: ReportsGeneratorProps) {
             </div>
           )}
         </TabsContent>
-
+ 
         <TabsContent value="preview" className="mt-4">
           <ReportPreview
             reportType={selectedReportType}
@@ -432,22 +429,27 @@ export function ReportsGenerator({ type }: ReportsGeneratorProps) {
             dateRange={dateRange}
             customDateRange={dateRange === "custom" ? customDateRange : undefined}
           />
-
+ 
           <div className="flex justify-end mt-4 space-x-2">
-              <Button variant="outline" onClick={() => setActiveTab("generate")}>
-                Back to Generator
-              </Button>
-              <Button variant="outline" onClick={exportReport}>
-                <FileSpreadsheet className="mr-2 h-4 w-4" />
-                Export as CSV
-              </Button>
-              <Button onClick={exportReport}>
-                <Download className="mr-2 h-4 w-4" />
-                Download as {reportFormat.toUpperCase()}
-              </Button>
+            <Button variant="outline" onClick={() => setActiveTab("generate")}>
+              Back to Generator
+            </Button>
+            <Button variant="outline" onClick={exportReportToCSV}>
+              <FileSpreadsheet className="mr-2 h-4 w-4" />
+              Export as CSV
+            </Button>
+            <Button onClick={exportReportToPDF}>
+              <Download className="mr-2 h-4 w-4" />
+              Download PDF
+            </Button>
+            <Button onClick={exportReportToExcel}>
+              <Download className="mr-2 h-4 w-4" />
+              Download Excel
+            </Button>
           </div>
+ 
         </TabsContent>
-
+ 
         <TabsContent value="schema" className="mt-4">
           <SchemaReference />
         </TabsContent>

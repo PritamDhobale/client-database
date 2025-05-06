@@ -50,7 +50,7 @@ export default function Header() {
       <div className="flex items-center space-x-4">
         <Notifications />
 
-        <DropdownMenu>
+        {/* <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="flex items-center text-sm font-medium text-gray-700 hover:text-primary">
               <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary mr-2 relative overflow-hidden">
@@ -81,7 +81,7 @@ export default function Header() {
               Logout
             </DropdownMenuItem>
           </DropdownMenuContent>
-        </DropdownMenu>
+        </DropdownMenu> */}
       </div>
     </header>
   )

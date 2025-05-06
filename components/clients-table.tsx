@@ -455,7 +455,7 @@ console.log("Filtered clients data:", filteredClients);
   <TableCell>{sanitizeValue(client.practice_name)}</TableCell>
   <TableCell className="hidden md:table-cell">
   {/* if N/A then field should be empty */}
-    {sanitizeValue(`${client.primary_contact_title ?? ""} ${client.primary_contact_first_name ?? ""} ${client.primary_contact_last_name ?? ""}`)}
+    {sanitizeValue(`${client.primary_contact_first_name ?? ""} ${client.primary_contact_last_name ?? ""},  ${client.primary_contact_title ?? ""}`)}
   </TableCell>
   <TableCell className="hidden md:table-cell">{sanitizeValue(client.email)}</TableCell>
   <TableCell className="hidden md:table-cell">{sanitizeValue(client.primary_contact_phone)}</TableCell>

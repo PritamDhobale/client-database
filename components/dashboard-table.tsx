@@ -94,7 +94,7 @@ export function DashboardTable() {
           <TableBody>
             {filteredClients.map((client) => (
               <TableRow key={client.id}>
-                <TableCell className="font-medium">{client.id}</TableCell>
+                <TableCell className="font-medium">{client.client_id}</TableCell>
                 <TableCell>{client.practice_name}</TableCell>
                 <TableCell className="hidden md:table-cell">
                   {`${sanitizeValue(client.primary_contact_first_name)} ${sanitizeValue(client.primary_contact_last_name)}, ${sanitizeValue(client.primary_contact_title)}`}

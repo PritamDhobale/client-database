@@ -66,15 +66,11 @@ export default function LoginPage() {
       {/* Displaying the Mysage logo */}
       <div className="logo-wrapper">
   <img src="/images/sage_healthy_rcm_logo.png" alt="mySAGE Logo" className="mysage-logo" />
-  <div className="powered-by-text">
-    POWERED BY <br />
-    HUBONE SYSTEMS
-  </div>
 </div>
 
 
       <div className="login-box">
-        <h2 className="login-heading">AccountsHub</h2>
+      <img src="/images/accountshub.png" alt="AccountsHub" className="login-logo-img" />
         <form onSubmit={handleSubmit} style={{ width: "100%" }}>
           <label>Email Address</label>
           <input
@@ -95,9 +91,11 @@ export default function LoginPage() {
             {isLoading ? "Logging in..." : "LOG IN"}
           </button>
         </form>
-
-        
       </div>
+      <div className="powered-by-text">
+    POWERED BY
+    HUBONE SYSTEMS
+  </div>
 
        {/* ✅ Footer */}
     <p className="footer-text">

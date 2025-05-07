@@ -63,7 +63,7 @@ export default function Sidebar() {
           <div className="flex items-center gap-3">
           <div className="w-38 h-11 flex items-center justify-center overflow-hidden">
           <Image
-            src="/images/sage_healthy_rcm_logo.png"
+            src="/images/accounthub.png"
             alt="Sage Healthy Logo"
             width={196}
             height={132}

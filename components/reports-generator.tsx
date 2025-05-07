@@ -16,6 +16,7 @@ import "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import Papa from "papaparse";
+import AgreementsPage from "@/app/(protected)/agreements/page"
  
  
 interface ReportsGeneratorProps {
@@ -46,8 +47,8 @@ export function ReportsGenerator({ type }: ReportsGeneratorProps) {
   const [reportFormat, setReportFormat] = useState("pdf")
   const [dateRange, setDateRange] = useState("last30")
   const [customDateRange, setCustomDateRange] = useState({
-    startDate: new Date().toISOString().split("T")[0],
-    endDate: new Date().toISOString().split("T")[0],
+    agreement_date: new Date().toISOString().split("T")[0],
+    end_date: new Date().toISOString().split("T")[0],
   })
   const [selectedReportType, setSelectedReportType] = useState(reportTypes[type][0].id)
   const [selectedClients, setSelectedClients] = useState<string[]>([])
@@ -140,61 +141,141 @@ export function ReportsGenerator({ type }: ReportsGeneratorProps) {
   }
  
   const exportReportToCSV = () => {
-    // Convert the report data into CSV
-    const csvData = Papa.unparse(reportData.map((client: any) => ({
-      "Client ID": client.client_id,
-      "Practice Name": client.practice_name,
-      "Primary Contact": client.primary_contact_first_name,
-      "Status": client.client_status === "active" ? "Active" : "Inactive"
-    })));
- 
-    // Trigger CSV download
+    let csvData;
+  
+    switch (selectedReportType) {
+      case "client-list":
+        csvData = Papa.unparse(reportData.map((client: any) => ({
+          "Client ID": client.client_id,
+          "Practice Name": client.practice_name,
+          "Primary Contact": client.primary_contact_first_name,
+          "Status": client.client_status === "active" ? "Active" : "Inactive"
+        })));
+        break;
+  
+      case "agreement-list":
+        csvData = Papa.unparse(reportData.map((agreement: any) => ({
+          "Client ID": agreement.clients?.client_id,
+          "Practice Name": agreement.clients?.practice_name,
+          "Start Date": new Date(agreement.agreement_date).toLocaleDateString(),
+          "End Date": new Date(agreement.end_date).toLocaleDateString(),
+          "Status": agreement.status
+        })));
+        break;
+  
+      case "service-list":
+        csvData = Papa.unparse(reportData.map((service: any) => ({
+          "Client ID": service.client_id,
+          "Practice Name": service.practice_name,
+          "Services": service.services
+        })));
+        break;
+  
+      default:
+        csvData = Papa.unparse([]);
+    }
+  
     const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
-    saveAs(blob, "client-report.csv");
+    saveAs(blob, `${selectedReportType}.csv`);
   };
+  
  
   const exportReportToExcel = () => {
-    // Create a new worksheet from report data
-    const ws = XLSX.utils.json_to_sheet(reportData.map((client: any) => ({
-      "Client ID": client.client_id,
-      "Practice Name": client.practice_name,
-      "Primary Contact": client.primary_contact_first_name,
-      "Status": client.client_status === "active" ? "Active" : "Inactive"
-    })));
- 
-    // Create a workbook and add the worksheet to it
+    let sheetData;
+  
+    switch (selectedReportType) {
+      case "client-list":
+        sheetData = reportData.map((client: any) => ({
+          "Client ID": client.client_id,
+          "Practice Name": client.practice_name,
+          "Primary Contact": client.primary_contact_first_name,
+          "Status": client.client_status === "active" ? "Active" : "Inactive"
+        }));
+        break;
+  
+      case "agreement-list":
+        sheetData = reportData.map((agreement: any) => ({
+          "Client ID": agreement.clients?.client_id,
+          "Practice Name": agreement.clients?.practice_name,
+          "Start Date": new Date(agreement.agreement_date).toLocaleDateString(),
+          "End Date": new Date(agreement.end_date).toLocaleDateString(),
+          "Status": agreement.status
+        }));
+        break;
+  
+      case "service-list":
+        sheetData = reportData.map((service: any) => ({
+          "Client ID": service.client_id,
+          "Practice Name": service.practice_name,
+          "Services": service.services
+        }));
+        break;
+  
+      default:
+        sheetData = [];
+    }
+  
+    const ws = XLSX.utils.json_to_sheet(sheetData);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Client Report");
- 
-    // Write the Excel file and trigger download
-    XLSX.writeFile(wb, "client-report.xlsx");
+    XLSX.utils.book_append_sheet(wb, ws, "Report");
+    XLSX.writeFile(wb, `${selectedReportType}.xlsx`);
   };
+  
  
  
   // Handle report generation
   const generateReport = () => {
-    if (selectedClients.length === 0) return
- 
-    setIsGenerating(true)
-    setReportData(null)
- 
-    // Filter data based on selected report type
+    if (selectedClients.length === 0) return;
+  
+    setIsGenerating(true);
+    setReportData(null);
+  
     const filteredData = clients
-    .filter(client => selectedClients.includes(client.client_id))
-    .map(client => ({
-      client_id: client.client_id,
-      practice_name: client.practice_name,
-      // ← add these two so your export helpers have the fields they expect:
-      primary_contact_first_name: client.primary_contact_first_name,
-      client_status: client.client_status,
-    }));
- 
- 
-  setReportData(filteredData);
-  setIsGenerating(false);
-  setActiveTab("preview");
- 
-  }
+      .filter(client => selectedClients.includes(client.client_id))
+      .map(client => {
+        switch (selectedReportType) {
+          case "client-list":
+            return {
+              client_id: client.client_id,
+              practice_name: client.practice_name,
+              primary_contact_first_name: client.primary_contact_first_name,
+              client_status: client.client_status,
+            };
+  
+          case "agreement-list":
+            return client.agreements.map((agreement: any) => ({
+              clients: {
+                client_id: client.client_id,
+                practice_name: client.practice_name,
+              },
+              agreement_date: agreement.agreement_date,
+              end_date: agreement.end_date,
+              status: new Date(agreement.end_date) > new Date() ? "active" : "expired",
+            }));
+  
+          case "service-list":
+            return {
+              client_id: client.client_id,
+              practice_name: client.practice_name,
+              services: client.services.map((s: any) => s.services?.service_name || "").join(", "),
+            };
+  
+          default:
+            return {};
+        }
+      });
+  
+    // Flatten in case of agreement-list returning arrays
+    const result =
+      selectedReportType === "agreement-list"
+        ? filteredData.flat()
+        : filteredData;
+  
+    setReportData(result);
+    setIsGenerating(false);
+    setActiveTab("preview");
+  };
+  
  
   const exportReport = () => {
     // Export to PDF, CSV, or Excel based on selected format
@@ -285,8 +366,8 @@ export function ReportsGenerator({ type }: ReportsGeneratorProps) {
                     <Input
                       id="start-date"
                       type="date"
-                      value={customDateRange.startDate}
-                      onChange={(e) => setCustomDateRange((prev) => ({ ...prev, startDate: e.target.value }))}
+                      value={customDateRange.agreement_date}
+                      onChange={(e) => setCustomDateRange((prev) => ({ ...prev, agreement_date: e.target.value }))}
                     />
                   </div>
                   <div className="space-y-2">
@@ -294,8 +375,8 @@ export function ReportsGenerator({ type }: ReportsGeneratorProps) {
                     <Input
                       id="end-date"
                       type="date"
-                      value={customDateRange.endDate}
-                      onChange={(e) => setCustomDateRange((prev) => ({ ...prev, endDate: e.target.value }))}
+                      value={customDateRange.end_date}
+                      onChange={(e) => setCustomDateRange((prev) => ({ ...prev, end_date: e.target.value }))}
                     />
                   </div>
                 </div>

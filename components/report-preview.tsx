@@ -17,7 +17,7 @@ interface ReportPreviewProps {
   isLoading: boolean;
   selectedClients: string[];
   dateRange: string;
-  customDateRange?: { startDate: string; endDate: string };
+  customDateRange?: { agreement_date: string; end_date: string };
 }
 
 export function ReportPreview({
@@ -42,8 +42,8 @@ export function ReportPreview({
   // Format date range for display
   const getFormattedDateRange = () => {
     if (dateRange === "custom" && customDateRange) {
-      return `${new Date(customDateRange.startDate).toLocaleDateString()} - ${new Date(
-        customDateRange.endDate
+      return `${new Date(customDateRange.agreement_date).toLocaleDateString()} - ${new Date(
+        customDateRange.end_date
       ).toLocaleDateString()}`;
     }
 
@@ -157,7 +157,7 @@ export function ReportPreview({
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Agreement ID
+                    Client ID
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Client
@@ -176,13 +176,13 @@ export function ReportPreview({
               <tbody className="bg-white divide-y divide-gray-200">
                 {reportData.slice(0, 5).map((agreement: any, index: number) => (
                   <tr key={index}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{agreement.id}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{agreement.clientName}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{agreement.clients?.client_id}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{agreement.clients?.practice_name}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(agreement.startDate).toLocaleDateString()}
+                      {new Date(agreement.agreement_date).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(agreement.endDate).toLocaleDateString()}
+                      {new Date(agreement.end_date).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <Badge
@@ -213,6 +213,40 @@ export function ReportPreview({
             )}
           </div>
         );
+
+        case "service-list":
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-medium">Service List Report</h3>
+        <Badge variant="outline">{getFormattedDateRange()}</Badge>
+      </div>
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client ID</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Practice Name</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Services</th>
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
+          {reportData.slice(0, 5).map((service: any, index: number) => (
+            <tr key={index}>
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{service.client_id}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{service.practice_name}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{service.services}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {reportData.length > 5 && (
+        <p className="text-sm text-gray-500 italic text-center">
+          Showing 5 of {reportData.length} records. Download the full report to see all data.
+        </p>
+      )}
+    </div>
+  );
+
 
       default:
         return (

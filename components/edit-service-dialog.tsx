@@ -75,7 +75,7 @@ export function EditServiceDialog({ service, trigger, onSave }: EditServiceDialo
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button variant="ghost" size="sm">
+          <Button variant="outline" size="sm">
             <FileEdit className="mr-2 h-4 w-4" />
             Edit Service
           </Button>

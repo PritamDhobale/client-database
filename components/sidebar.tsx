@@ -87,7 +87,7 @@ export default function Sidebar() {
                     pathname === item.href && "bg-primary/10 text-primary font-medium",
                   )}
                 >
-                  <item.icon className="h-5 w-5 mr-3" />
+                  <item.icon className="h-5 w-5 w-5 min-w-[20px] shrink-0 mr-3" />
                   {item.name}
                 </Link>
               </li>

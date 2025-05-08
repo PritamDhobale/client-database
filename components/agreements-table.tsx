@@ -321,7 +321,7 @@ export function AgreementsTable() {
                             <div>{agreement.term}</div>
                             <div className="text-gray-500">End Date:</div>
                             <div>{agreement.end_date ? new Date(agreement.end_date).toLocaleDateString() : "N/A"}</div>
-                            <p>------------------------------------------------------</p>
+                            <p>--------------------------------------</p>
                             <Separator />
                           </div>
                         ))}

@@ -62,9 +62,10 @@ export function ServicesTable() {
   const [filters, setFilters] = useState({
     clientId: "",
     practiceName: "",
-    serviceName: "",
+    serviceName: [] as string[], // <- change this to array
     nppStatus: "",
   })
+  
   const [activeFilters, setActiveFilters] = useState<string[]>([])
 
   useEffect(() => {
@@ -125,18 +126,9 @@ export function ServicesTable() {
       // Update the state with the formatted data
       setServices(formattedData);
     };
-    
-    
-  
+
     fetchServices();  // Call the function to fetch the data
   }, []);
-  
-  
-  
-  
-  
-  
-
 
   const toggleRow = (id: string) => {
     setExpandedRows((prev) => ({
@@ -146,7 +138,77 @@ export function ServicesTable() {
   }
 
   // Group the services by clientId
-const groupedServices = services.reduce((acc: Record<string, any>, service: any) => {
+
+const handleSaveService = (updatedService: any) => {
+  setServices((prev) =>
+    prev.map((service) => (service.client_service_id === updatedService.client_service_id ? updatedService : service))
+  );
+};
+
+const updateFilter = (key: string, value: string | string[]) => {
+  setFilters((prev) => ({ ...prev, [key]: value }));
+
+  if (value && !activeFilters.includes(key)) {
+    setActiveFilters((prev) => [...prev, key]);
+  } else if (
+    (Array.isArray(value) && value.length === 0) ||
+    (!Array.isArray(value) && !value)
+  ) {
+    setActiveFilters((prev) => prev.filter((f) => f !== key));
+  }
+};
+
+
+
+const filteredServices = services.filter((service) => {
+  if (
+    searchTerm &&
+    !Object.values(service).some((value) =>
+      String(value).toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  ) {
+    return false;
+  }
+
+  if (
+    filters.clientId &&
+    filters.clientId !== "all" &&
+    service.clientId !== filters.clientId
+  )
+    return false;
+
+  if (
+    filters.practiceName &&
+    filters.practiceName !== "all" &&
+    service.practiceName !== filters.practiceName
+  )
+    return false;
+
+  if (filters.nppStatus && filters.nppStatus !== "all") {
+    const normalizedStatus = service.nppStatus?.toString().toLowerCase();
+    const matchStatus = filters.nppStatus === "active" ? "true" : "false";
+    if (normalizedStatus !== matchStatus) return false;
+  }
+
+  // 💡 NEW: Check if service name(s) appear anywhere for this client
+  if (filters.serviceName.length > 0) {
+    const allServicesForClient = services
+      .filter((s) => s.clientId === service.clientId)
+      .map((s) => s.services[0]?.serviceName);
+
+    const hasAllSelectedServices = filters.serviceName.every((selected) =>
+      allServicesForClient.includes(selected)
+    );
+
+    if (!hasAllSelectedServices) return false;
+  }
+
+  return true;
+});
+
+  
+  // Group the filtered services by clientId
+const groupedServices = filteredServices.reduce((acc: Record<string, any>, service: any) => {
   const client_id = service.clientId;
 
   if (!acc[client_id]) {
@@ -162,41 +224,6 @@ const groupedServices = services.reduce((acc: Record<string, any>, service: any)
   return acc;
 }, {});
 
-const handleSaveService = (updatedService: any) => {
-  setServices((prev) =>
-    prev.map((service) => (service.client_service_id === updatedService.client_service_id ? updatedService : service))
-  );
-};
-
-  const updateFilter = (field: string, value: string) => {
-    setFilters((prev) => ({ ...prev, [field]: value }))
-
-    if (value && !activeFilters.includes(field)) {
-      setActiveFilters((prev) => [...prev, field])
-    } else if (!value && activeFilters.includes(field)) {
-      setActiveFilters((prev) => prev.filter((f) => f !== field))
-    }
-  }
-
-  const filteredServices = services.filter((service) => {
-    if (searchTerm && !Object.values(service).some((value) => String(value).toLowerCase().includes(searchTerm.toLowerCase()))) {
-      return false;
-    }
-  
-    if (filters.clientId && service.clientId !== filters.clientId) return false;
-    if (filters.practiceName && service.practiceName !== filters.practiceName) return false;
-  
-    // Access serviceName from the first service in the array or iterate over all services
-    if (filters.serviceName && !service.services.some(s => s.serviceName === filters.serviceName)) return false;
-  
-    // if (filters.nppStatus) {
-    //   const status = filters.nppStatus === "active" ? true : false;
-    //   if (service.nppStatus !== status) return false;
-    // }
-  
-    return true;
-  });
-  
 
   return (
     <div className="space-y-4">
@@ -230,7 +257,7 @@ const handleSaveService = (updatedService: any) => {
               </Button>
             </PopoverTrigger>
 
-            <PopoverContent className="w-[340px] p-0" align="end">
+            <PopoverContent className="w-[340px] p-0 max-h-[400px] overflow-y-auto" align="end">
               <Card>
                 <CardContent className="p-3">
                   <div className="space-y-4 py-2">
@@ -248,9 +275,9 @@ const handleSaveService = (updatedService: any) => {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="all">All Client IDs</SelectItem>
-                              {services.map((service) => (
-                                <SelectItem key={service.clientId} value={service.clientId}>
-                                  {service.clientId}
+                              {Array.from(new Set(services.map((s) => s.clientId))).map((id) => (
+                                <SelectItem key={id} value={id}>
+                                  {id}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -268,38 +295,42 @@ const handleSaveService = (updatedService: any) => {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="all">All Clients</SelectItem>
-                              {services.map((service) => (
-                                <SelectItem key={service.practiceName} value={service.practiceName}>
-                                  {service.practiceName}
-                                </SelectItem>
+                              {Array.from(new Set(services.map((s) => s.practiceName)))
+                                .map((name) => (
+                                  <SelectItem key={name} value={name}>
+                                    {name}
+                                  </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                         </div>
 
                         <div className="space-y-2">
-  <label className="text-sm font-medium">Service Name</label>
-  <Select
-    value={filters.serviceName}
-    onValueChange={(value) => updateFilter("serviceName", value)}
-  >
-    <SelectTrigger>
-      <SelectValue placeholder="Select service name" />
-    </SelectTrigger>
-    <SelectContent>
-      <SelectItem value="all">All Services</SelectItem>
-      {services.map((service) => (
-        service.services.map((subService) => (
-          <SelectItem key={subService.serviceName} value={subService.serviceName}>
-            {subService.serviceName}
-          </SelectItem>
-        ))
-      ))}
-    </SelectContent>
-  </Select>
-</div>
-
-
+                          <label className="text-sm font-medium">Service Name</label>
+                          <div className="border p-2 rounded max-h-40 overflow-y-auto">
+                            {Array.from(new Set(
+                              services.flatMap((s) => s.services.map((ss) => ss.serviceName))
+                            ))
+                              .slice(0, 10)
+                              .map((name) => (
+                                <div key={name} className="flex items-center space-x-2">
+                                  <input
+                                    type="checkbox"
+                                    value={name}
+                                    checked={filters.serviceName?.includes(name)}
+                                    onChange={(e) => {
+                                      const checked = e.target.checked;
+                                      const updated = checked
+                                        ? [...(filters.serviceName || []), name]
+                                        : filters.serviceName.filter((n: string) => n !== name);
+                                      updateFilter("serviceName", updated);
+                                    }}
+                                  />
+                                  <label>{name}</label>
+                                </div>
+                              ))}
+                          </div>
+                        </div>
                         <div className="space-y-2">
                           <label className="text-sm font-medium">NPP Status</label>
                           <Select value={filters.nppStatus} onValueChange={(value) => updateFilter("nppStatus", value)}>
@@ -317,6 +348,20 @@ const handleSaveService = (updatedService: any) => {
                     </div>
 
                     <div className="pt-2 flex justify-end">
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        setFilters({
+                          clientId: "",
+                          practiceName: "",
+                          serviceName: [], // ✅ Clear array, not string
+                          nppStatus: "",
+                        });
+                        setActiveFilters([]);
+                      }}
+                    >
+                      Clear All
+                    </Button>
                       <Button onClick={() => setIsFilterOpen(false)} className="w-full">
                         Apply Filters
                       </Button>
@@ -327,7 +372,7 @@ const handleSaveService = (updatedService: any) => {
             </PopoverContent>
           </Popover>
 
-          <NewServiceDialog onAdd={(newService) => setServices([...services, newService])} />
+          {/* <NewServiceDialog onAdd={(newService) => setServices([...services, newService])} /> */}
           <ExportServicesDialog onExport={(columns, format) => console.log(`Exporting services with columns: ${columns}, format: ${format}`)} />
         </div>
       </div>

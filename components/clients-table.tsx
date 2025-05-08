@@ -295,20 +295,20 @@ console.log("Filtered clients data:", filteredClients);
           <div className="flex items-center gap-2">
             <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
               <PopoverTrigger asChild>
-                {/* <Button variant="outline" className="flex items-center gap-2">
-                  <Filter className="h-4 w-4" />
-                  <span>Filters</span>
-                  {activeFilters.length > 0 && (
-                    <Badge variant="secondary" className="ml-1">
-                      {activeFilters.length}
-                    </Badge>
-                  )}
-                </Button> */}
+              <Button variant="outline" className="flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                <span>Filters</span>
+                {activeFilters.length > 0 && (
+                  <Badge variant="secondary" className="ml-1">
+                    {activeFilters.length}
+                  </Badge>
+                )}
+              </Button>
               </PopoverTrigger>
               <PopoverContent className="w-[340px] p-0" align="end">
                 <Card>
                   <CardContent className="p-3">
-                    <div className="space-y-4 py-2">
+                    <div className="space-y-4 py-2 max-h-[400px] overflow-y-auto">
                       <div className="flex items-center justify-between">
                         <h3 className="font-medium">Filter Clients</h3>
                         <Button variant="ghost" size="sm" onClick={clearAllFilters} className="h-8 px-2 text-xs">

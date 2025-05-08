@@ -453,10 +453,10 @@ console.log("Filtered clients data:", filteredClients);
                   <TableRow key={client.client_id} className="cursor-pointer hover:bg-gray-50" onClick={() => handleRowClick(client.client_id)}>
   <TableCell className="font-medium">{sanitizeValue(client.client_id)}</TableCell>
   <TableCell className="hidden md:table-cell">{sanitizeValue(client.practice_name)}</TableCell>
-  <TableCell className="hidden md:table-cell whitespace-nowrap">
+  <TableCell className="hidden md:table-cell">
     {sanitizeValue(`${client.primary_contact_first_name ?? ""} ${client.primary_contact_last_name ?? ""},  ${client.primary_contact_title ?? ""}`)}
   </TableCell>
-  <TableCell className="hidden md:table-cell whitespace-nowrap">{sanitizeValue(client.email)}</TableCell>
+  <TableCell className="hidden md:table-cell">{sanitizeValue(client.email)}</TableCell>
   <TableCell className="hidden md:table-cell whitespace-nowrap">{sanitizeValue(client.primary_contact_phone)}</TableCell>
   <TableCell className="text-xs px-1 text-center align-middle w-[60px]">{sanitizeValue(client.state)}</TableCell>
   <TableCell className="text-xs px-1 text-center align-middle w-[60px]">0{sanitizeValue(client.category_id || "Not Available")}</TableCell>  <TableCell className="text-right">

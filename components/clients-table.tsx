@@ -427,8 +427,9 @@ console.log("Filtered clients data:", filteredClients);
         )}
 
         {/* Clients Table */}
-        <div className="rounded-md border">
-          <Table>
+        <div className="overflow-x-auto w-full">
+          <div className="min-w-[800px] rounded-md border">
+            <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>ID</TableHead>
@@ -508,6 +509,7 @@ console.log("Filtered clients data:", filteredClients);
               )}
             </TableBody>
           </Table>
+        </div>
         </div>
 
         {/* Results Count */}

@@ -163,19 +163,35 @@ export function NewClientForm() {
       [field]: value,  // Directly update the field with the selected value
     });
   };
-  
+
+  const [documents, setDocuments] = useState<File[]>([])
+
+  const handleDocumentUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setDocuments(Array.from(e.target.files));
+    }
+  }
 
   useEffect(() => {
     const fetchServices = async () => {
       const { data, error } = await supabase.from("services").select("*");
       if (data) {
-        setServices(data); // Now TypeScript knows that 'data' is of type 'Service[]'
+        setServices(data);
+  
+        // ✅ Re-map selected services after loading list
+        setFormData((prev) => ({
+          ...prev,
+          service_ids: prev.service_ids.filter(id =>
+            data.some((service) => service.id === id)
+          ),
+        }));
       } else {
         console.error("Failed to fetch services:", error);
       }
     };
     fetchServices();
   }, []);
+  
 
   const handleSubmit = async () => {
     setSaving(true);
@@ -209,6 +225,41 @@ export function NewClientForm() {
       }
   
       const clientId = data[0].client_id;
+      if (documents.length > 0) {
+        for (const doc of documents) {
+          const filePath = `${clientId}/${doc.name}`;
+      
+          // Step 1: Upload to Supabase Storage
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from("client_documents")
+            .upload(filePath, doc);
+      
+          if (uploadError) {
+            console.error("Upload failed:", uploadError);
+            continue;
+          }
+      
+          // Step 2: Get public URL for viewing later
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from("client_documents").getPublicUrl(filePath);
+      
+          // ✅ Step 3: Insert metadata into client_documents table
+          const { error: insertError } = await supabase.from("client_documents").insert([
+            {
+              client_id: clientId,
+              file_name: doc.name,
+              file_url: publicUrl,
+              size: doc.size,
+            },
+          ]);
+      
+          if (insertError) {
+            console.error("Failed to insert file record:", insertError);
+          }
+        }
+      } 
+      
   
       // ✅ STEP 3: Insert agreement
       const agreementPayload = {
@@ -286,6 +337,56 @@ export function NewClientForm() {
       setSaving(false);
     }
   };  
+  // Download CSV template with headers only
+const downloadTemplate = () => {
+  const headers = Object.keys(formData).join(",");
+  const csvContent = `${headers}\n`; // Just headers
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.setAttribute("download", "new_client_template.csv");
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+// Upload CSV and auto-populate form
+const handleUploadCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    const csv = event.target?.result as string;
+    const [headerLine, valueLine] = csv.split("\n");
+    const headers = headerLine.split(",").map(h => h.trim());
+    const values = valueLine.split(",").map(v => v.trim());
+
+    const parsed: any = {};
+    headers.forEach((key, i) => {
+      if (key === "service_ids") {
+        parsed[key] = values[i]?.split(";").map((id) => id.trim());
+      } else if (key === "agreement_date" || key === "commencement_date") {
+        const date = new Date(values[i]);
+        if (!isNaN(date.getTime())) {
+          parsed[key] = date.toISOString().split("T")[0]; // format: yyyy-mm-dd
+        } else {
+          parsed[key] = "";
+        }
+      } else {
+        parsed[key] = values[i];
+      }
+    });
+
+    setFormData((prev) => ({
+      ...prev,
+      ...parsed,
+    }));
+  };
+  reader.readAsText(file);
+};
+
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -300,6 +401,12 @@ export function NewClientForm() {
           <DialogTitle>Add New Client</DialogTitle>
           <DialogDescription>Enter the client details below to create a new client record.</DialogDescription>
         </DialogHeader>
+        <div className="flex justify-end gap-4 pb-2">
+          <Button variant="outline" onClick={downloadTemplate}>
+            Download Client Form Template
+          </Button>
+          <Input type="file" accept=".csv" onChange={handleUploadCSV} className="w-fit" />
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
           {/* Basic Information */}
@@ -584,23 +691,28 @@ export function NewClientForm() {
                 />
             </div>
             <div className="space-y-2">
-                <Label htmlFor="services">Services</Label>
-                <Select
-                  value={formData.service_ids[0] || ""}
-                  onValueChange={(value: string) => handleChange("service_ids", [value])}
-                >
-                  <SelectTrigger id="services">
-                    <SelectValue placeholder="Select a service" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {services.map((service) => (
-                      <SelectItem key={service.id} value={service.id}>
-                        {service.service_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-            </div>
+  <Label htmlFor="services">Services</Label>
+  <div className="border rounded-md p-2">
+    {services.map((service) => (
+      <div key={service.id} className="flex items-center space-x-2">
+        <input
+          type="checkbox"
+          id={`service-${service.id}`}
+          value={service.id}
+          checked={formData.service_ids.includes(service.id)}
+          onChange={(e) => {
+            const newIds = e.target.checked
+              ? [...formData.service_ids, service.id]
+              : formData.service_ids.filter((id) => id !== service.id);
+            handleChange("service_ids", newIds);
+          }}
+        />
+        <label htmlFor={`service-${service.id}`}>{service.service_name}</label>
+      </div>
+    ))}
+  </div>
+</div>
+
             
             <div className="space-y-2">
               <Label htmlFor="code">Code</Label>
@@ -627,6 +739,10 @@ export function NewClientForm() {
               <Input id="website" value={formData.website} onChange={(e) => handleChange("website", e.target.value)} />
             </div>
 
+            <div className="space-y-2">
+              <Label>Upload Documents</Label>
+              <Input type="file" multiple onChange={handleDocumentUpload} />
+            </div>
           </div>
 
             <Separator />

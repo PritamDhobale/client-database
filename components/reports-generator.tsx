@@ -157,8 +157,8 @@ export function ReportsGenerator({ type }: ReportsGeneratorProps) {
         csvData = Papa.unparse(reportData.map((agreement: any) => ({
           "Client ID": agreement.clients?.client_id,
           "Practice Name": agreement.clients?.practice_name,
-          "Start Date": new Date(agreement.agreement_date).toLocaleDateString(),
-          "End Date": new Date(agreement.end_date).toLocaleDateString(),
+          "Start Date": agreement.agreement_date ? new Date(agreement.agreement_date).toLocaleDateString() : "",
+          "End Date": agreement.end_date ? new Date(agreement.end_date).toLocaleDateString() : "",
           "Status": agreement.status
         })));
         break;
@@ -197,8 +197,8 @@ export function ReportsGenerator({ type }: ReportsGeneratorProps) {
         sheetData = reportData.map((agreement: any) => ({
           "Client ID": agreement.clients?.client_id,
           "Practice Name": agreement.clients?.practice_name,
-          "Start Date": new Date(agreement.agreement_date).toLocaleDateString(),
-          "End Date": new Date(agreement.end_date).toLocaleDateString(),
+          "Start Date": agreement.agreement_date ? new Date(agreement.agreement_date).toLocaleDateString() : "",
+          "End Date": agreement.end_date ? new Date(agreement.end_date).toLocaleDateString() : "",
           "Status": agreement.status
         }));
         break;

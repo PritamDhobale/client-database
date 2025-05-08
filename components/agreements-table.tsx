@@ -131,6 +131,44 @@ export function AgreementsTable() {
     )
   }
 
+  const getStatusBadgeForLatestAgreement = (agreements: AgreementDetails[]) => {
+    const today = new Date()
+  
+    // Sort agreements by end_date descending, fallback to agreement_date
+    const sorted = agreements
+      .filter(a => a.end_date || a.agreement_date)
+      .sort((a, b) => {
+        const dateA = new Date(a.end_date || a.agreement_date)
+        const dateB = new Date(b.end_date || b.agreement_date)
+        return dateB.getTime() - dateA.getTime()
+      })
+  
+    const latest = sorted[0]
+    if (!latest) {
+      return <Badge variant="outline">Unknown</Badge>
+    }
+  
+    const end = latest.end_date ? new Date(latest.end_date) : null
+  
+    let status = "Unknown"
+    if (end) {
+      status = end >= today ? "Active" : "Expired"
+    }
+  
+    return (
+      <Badge variant={
+        status === "Expired"
+          ? "destructive"
+          : status === "Active"
+          ? "default"
+          : "outline" // fallback for "Unknown"
+      }>
+        {status.toLowerCase()}
+      </Badge>
+    )    
+  }
+  
+
   const filteredAgreements = Object.entries(groupedAgreements)
     .filter(([_, data]) => 
       (data.practice_name || "").toLowerCase().includes(searchTerm.toLowerCase())
@@ -230,7 +268,9 @@ export function AgreementsTable() {
                     </TableCell>
                     <TableCell>{clientData.client_id}</TableCell>
                     <TableCell>{clientData.practice_name}</TableCell>
-                    <TableCell>{getStatusBadge(clientData.agreements[0]?.agreement_date, clientData.agreements[0]?.term, clientData.agreements[0]?.end_date)}</TableCell>
+                    <TableCell>
+                      {getStatusBadgeForLatestAgreement(clientData.agreements)}
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                       <RenewAgreementDialog

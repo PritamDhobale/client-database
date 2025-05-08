@@ -179,11 +179,12 @@ export function ReportPreview({
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{agreement.clients?.client_id}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{agreement.clients?.practice_name}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(agreement.agreement_date).toLocaleDateString()}
+                      {agreement.agreement_date ? new Date(agreement.agreement_date).toLocaleDateString() : "N/A"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(agreement.end_date).toLocaleDateString()}
+                      {agreement.end_date ? new Date(agreement.end_date).toLocaleDateString() : "N/A"}
                     </td>
+
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <Badge
                         variant={

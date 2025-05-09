@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { LogOut, User, Settings } from "lucide-react"
+import { LogOut, User, Settings, Clock } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,6 +50,10 @@ export default function Header() {
 
       <div className="flex items-center space-x-4">
         <Notifications />
+        <Button onClick={() => router.push("/history")} className="text-sm">
+          <Clock className="h-4 w-4 mr-1" />
+          History
+        </Button>
 
         {/* <DropdownMenu>
           <DropdownMenuTrigger asChild>

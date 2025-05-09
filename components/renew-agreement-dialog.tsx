@@ -4,6 +4,7 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { supabase } from "@/lib/supabaseClient"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -65,21 +66,71 @@ export function RenewAgreementDialog({
     setOpen(newOpen)
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setProcessing(true)
-
-    // Determine the actual start date based on renewal type
-    const effectiveStartDate = renewalType === "continue" ? calculateDefaultStartDate() : startDate
-
-    // In a real app, this would be an API call to renew the agreement
-    setTimeout(() => {
-      if (onRenew) {
-        onRenew(agreementId, effectiveStartDate, term)
+  
+    const effectiveStartDate = renewalType === "continue"
+      ? calculateDefaultStartDate()
+      : startDate;
+  
+    const start = new Date(effectiveStartDate);
+    const newEnd = new Date(start);
+  
+    const termNumber = parseInt(term.split(" ")[0], 10);
+    const termUnit = term.includes("year") ? "year" : "month";
+  
+    if (termUnit === "year") {
+      newEnd.setFullYear(newEnd.getFullYear() + termNumber);
+    } else {
+      newEnd.setMonth(newEnd.getMonth() + termNumber);
+    }
+  
+    try {
+      const { error: updateError } = await supabase
+        .from("agreements")
+        .update({
+          agreement_date: effectiveStartDate,
+          end_date: newEnd.toISOString(),
+          term: term
+        })
+        .eq("agreement_id", agreementId);
+  
+      if (updateError) {
+        console.error("Renewal failed:", updateError);
+        return;
       }
-      setProcessing(false)
-      setOpen(false)
-    }, 1000)
-  }
+  
+      // ✅ Insert into notifications
+      await supabase.from("notifications").insert([
+        {
+          message: `Agreement for ${clientName} renewed until ${newEnd.toLocaleDateString()}`,
+          type: "success",
+          created_at: new Date().toISOString()
+        }
+      ]);
+  
+      // ✅ Insert into history
+      await supabase.from("history").insert([
+        {
+          action: "renew_agreement",
+          message: `Agreement ${agreementId} renewed for ${clientName}`,
+          created_at: new Date().toISOString()
+        }
+      ]);
+  
+      // Optional callback
+      if (onRenew) {
+        onRenew(agreementId, effectiveStartDate, term);
+      }
+  
+      setOpen(false);
+    } catch (err) {
+      console.error("Unexpected error during renewal:", err);
+    } finally {
+      setProcessing(false);
+    }
+  };
+  
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>

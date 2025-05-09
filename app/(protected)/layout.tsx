@@ -3,7 +3,6 @@ import type React from "react"
 import Sidebar from "@/components/sidebar"
 import Header from "@/components/header"
 import ProtectedRoute from "@/components/ProtectedRoute"
-
 export default function ProtectedLayout({
   children,
 }: {

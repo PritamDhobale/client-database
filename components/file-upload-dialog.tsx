@@ -64,7 +64,6 @@ export function FileUploadDialog({ clientId, clientName, trigger, onUploadComple
     setUploading(true);
     setProgress(0);
   
-    // Simulate upload progress
     const interval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
@@ -73,39 +72,34 @@ export function FileUploadDialog({ clientId, clientName, trigger, onUploadComple
           setUploadComplete(true);
           return 100;
         }
-        return prev + 5; // Simulate progress increment
+        return prev + 5;
       });
     }, 200);
   
-    const file = files[0]; // Assuming single file upload for simplicity
-    const filePath = `client-documents/${clientId}/${encodeURIComponent(file.name)}`; // Ensure correct file path with URL encoding
+    const file = files[0];
+    const filePath = `client-documents/${clientId}/${encodeURIComponent(file.name)}`;
   
     try {
-      // Upload the file to Supabase Storage
       const { data, error } = await supabase.storage
-        .from("client-documents") // Correct bucket name
+        .from("client-documents")
         .upload(filePath, file);
   
       if (error) {
-        console.error("Error uploading file:", error.message || error); // Log more details
+        console.error("Error uploading file:", error.message || error);
         setUploading(false);
         setProgress(0);
         return;
       }
   
-      // Get the file URL after successful upload
-      const fileUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${data.Key}`;
-  
-      // Get the file size in bytes
+      const fileUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${filePath}`;
       const fileSize = file.size;
   
-      // Optionally store file metadata in the database (file name, file URL, file size, etc.)
       const { error: dbError } = await supabase.from("client_documents").insert([
         {
           client_id: clientId,
           file_name: file.name,
           file_url: fileUrl,
-          size: fileSize, // Store file size here
+          size: fileSize,
         },
       ]);
   
@@ -116,9 +110,33 @@ export function FileUploadDialog({ clientId, clientName, trigger, onUploadComple
         return;
       }
   
-      console.log("File uploaded successfully:", fileUrl);
+      // ✅ Fetch user email
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      const userEmail = user?.email || "unknown";
   
-      // After the upload is complete, reset the states
+      // ✅ Add notification
+      await supabase.from("notifications").insert([
+        {
+          message: `Document "${file.name}" uploaded for ${clientName}`,
+          type: "info",
+          created_at: new Date().toISOString(),
+        },
+      ]);
+  
+      // ✅ Add history record
+      await supabase.from("history").insert([
+        {
+          action: `Uploaded document "${file.name}"`,
+          entity: "client_documents",
+          reference_id: clientId,
+          user_email: userEmail,
+          created_at: new Date().toISOString(),
+        },
+      ]);
+  
+      console.log("Upload successful");
       setProgress(100);
       setUploading(false);
       setUploadComplete(true);
@@ -129,7 +147,6 @@ export function FileUploadDialog({ clientId, clientName, trigger, onUploadComple
       setProgress(0);
     }
   };
-  
   
   
 

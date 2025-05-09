@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/lib/supabaseClient"
 import { Switch } from "@/components/ui/switch";
 import { FileEdit } from "lucide-react";
 import {
@@ -58,18 +59,43 @@ export function EditServiceDialog({ service, trigger, onSave }: EditServiceDialo
   };
   
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setSaving(true);
-
-    // In a real app, this would be an API call to update the service
-    setTimeout(() => {
+  
+    try {
+      // ✅ 1. Update the service data (assuming you are saving it somewhere)
       if (onSave) {
         onSave(formData);
       }
+  
+      // ✅ 2. Log to notifications table
+      await supabase.from("notifications").insert([
+        {
+          message: `Service updated for client: ${formData.practiceName} (ID: ${formData.clientId})`,
+          type: "update",
+          created_at: new Date().toISOString(),
+        },
+      ]);
+  
+      // ✅ 3. Log to history table
+      await supabase.from("history").insert([
+        {
+          entity: "service",
+          entity_id: formData.client_service_id,
+          action: "update",
+          details: `Updated service for ${formData.practiceName}: rate=${formData.rate}, minimum=${formData.minimum}, NPP=${formData.nppStatus}`,
+          timestamp: new Date().toISOString(),
+        },
+      ]);
+  
       setSaving(false);
       setOpen(false);
-    }, 1000);
+    } catch (error) {
+      console.error("Failed to update service:", error);
+      setSaving(false);
+    }
   };
+  
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

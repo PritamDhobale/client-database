@@ -196,12 +196,11 @@ export function NewClientForm() {
   const handleSubmit = async () => {
     setSaving(true);
     try {
-      // ✅ STEP 1: Remove non-Client fields
       const {
         agreement_date,
         commencement_date,
         term,
-        service_ids, // ✅ Destructure this out too
+        service_ids,
         ...clientData
       } = formData;
   
@@ -211,9 +210,6 @@ export function NewClientForm() {
         created_at: new Date().toISOString(),
       };
   
-      console.log("Payload being sent:", payload);
-  
-      // ✅ STEP 2: Insert into Clients
       const { data, error } = await supabase
         .from("Clients")
         .insert([payload])
@@ -225,26 +221,43 @@ export function NewClientForm() {
       }
   
       const clientId = data[0].client_id;
+  
+      // ✅ Log notification
+      await supabase.from("notifications").insert([
+        {
+          message: `New client added: ${formData.practice_name}`,
+          type: "client",
+          created_at: new Date().toISOString(),
+        },
+      ]);
+  
+      // ✅ Log history
+      await supabase.from("history").insert([
+        {
+          action: "add",
+          entity: "client",
+          description: `Client ${formData.practice_name} added.`,
+          timestamp: new Date().toISOString(),
+        },
+      ]);
+  
       if (documents.length > 0) {
         for (const doc of documents) {
           const filePath = `${clientId}/${doc.name}`;
-      
-          // Step 1: Upload to Supabase Storage
-          const { data: uploadData, error: uploadError } = await supabase.storage
+  
+          const { error: uploadError } = await supabase.storage
             .from("client_documents")
             .upload(filePath, doc);
-      
+  
           if (uploadError) {
             console.error("Upload failed:", uploadError);
             continue;
           }
-      
-          // Step 2: Get public URL for viewing later
+  
           const {
             data: { publicUrl },
           } = supabase.storage.from("client_documents").getPublicUrl(filePath);
-      
-          // ✅ Step 3: Insert metadata into client_documents table
+  
           const { error: insertError } = await supabase.from("client_documents").insert([
             {
               client_id: clientId,
@@ -253,15 +266,13 @@ export function NewClientForm() {
               size: doc.size,
             },
           ]);
-      
+  
           if (insertError) {
             console.error("Failed to insert file record:", insertError);
           }
         }
-      } 
-      
+      }
   
-      // ✅ STEP 3: Insert agreement
       const agreementPayload = {
         client_id: clientId,
         agreement_date,
@@ -279,10 +290,9 @@ export function NewClientForm() {
         return;
       }
   
-      // ✅ STEP 4: Insert services
       const servicesToAdd = service_ids.map((serviceId: string) => ({
         client_id: clientId,
-        id: serviceId, // ✅ Foreign key to services.id
+        id: serviceId,
       }));
   
       const { error: serviceError } = await supabase
@@ -293,7 +303,6 @@ export function NewClientForm() {
         console.error("Failed to add services:", serviceError);
       }
   
-      // ✅ STEP 5: Reset form
       setOpen(false);
       setFormData({
         practice_name: "",
@@ -336,7 +345,8 @@ export function NewClientForm() {
     } finally {
       setSaving(false);
     }
-  };  
+  };
+    
   // Download CSV template with headers only
 const downloadTemplate = () => {
   const headers = Object.keys(formData).join(",");
@@ -627,34 +637,34 @@ const handleUploadCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
               <div className="space-y-2">
                 <Label htmlFor="state">State *</Label>
                 <Select value={formData.state} onValueChange={(value) => handleChange("state", value)}>
-  <SelectTrigger id="state">
-    <SelectValue placeholder="Select state" />
-  </SelectTrigger>
-  <SelectContent>
-    {US_STATES.map((state) => (
-      <SelectItem key={state} value={state}>
-        {state}
-      </SelectItem>
-    ))}
-  </SelectContent>
-</Select>
+                    <SelectTrigger id="state">
+                      <SelectValue placeholder="Select state" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {US_STATES.map((state) => (
+                        <SelectItem key={state} value={state}>
+                          {state}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
               </div>
             </div>
 
             <div className="space-y-2">
                 <Label htmlFor="state_of_formation">State of Formation *</Label>
                 <Select value={formData.state_of_formation} onValueChange={(value) => handleChange("state_of_formation", value)}>
-  <SelectTrigger id="state_of_formation">
-    <SelectValue placeholder="Select state of formation" />
-  </SelectTrigger>
-  <SelectContent>
-    {US_STATES.map((state) => (
-      <SelectItem key={state} value={state}>
-        {state}
-      </SelectItem>
-    ))}
-  </SelectContent>
-</Select>
+                <SelectTrigger id="state_of_formation">
+                  <SelectValue placeholder="Select state of formation" />
+                </SelectTrigger>
+                <SelectContent>
+                  {US_STATES.map((state) => (
+                    <SelectItem key={state} value={state}>
+                      {state}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               </div>
             </div>
 

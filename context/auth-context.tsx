@@ -23,20 +23,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
 
   useEffect(() => {
-    // Check if user is already authenticated from Supabase session
-    const checkUserSession = async () => {
-      const { data, error } = await supabase.auth.getSession() // Fix for session
-
-      if (data && data.session?.user) {
-        // If user data exists in session, map it to your User type
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session?.user) {
+          const user: User = {
+            id: session.user.id,
+            username: session.user.email || "",
+            name: session.user.user_metadata?.full_name || "Unknown",
+            role: "user",
+            email: session.user.email || "",
+          }
+          setState({
+            user,
+            isAuthenticated: true,
+            isLoading: false,
+          })
+        } else {
+          setState({
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+          })
+        }
+      }
+    )
+  
+    // Initial session fetch
+    supabase.auth.getSession().then(({ data }) => {
+      if (data?.session?.user) {
         const user: User = {
           id: data.session.user.id,
-          username: data.session.user.email || "",  // Fallback to empty string if email is undefined
-          name: data.session.user.user_metadata?.full_name || "Unknown", // Fallback if full_name is undefined
-          role: "user",  // Default role, adjust as per your logic
-          email: data.session.user.email || "", // Fallback to empty string if email is undefined
-        }        
-
+          username: data.session.user.email || "",
+          name: data.session.user.user_metadata?.full_name || "Unknown",
+          role: "user",
+          email: data.session.user.email || "",
+        }
         setState({
           user,
           isAuthenticated: true,
@@ -49,9 +70,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           isLoading: false,
         })
       }
+    })
+  
+    return () => {
+      authListener.subscription.unsubscribe()
     }
-    checkUserSession()
   }, [])
+  
 
   const login = (user: User) => {
     setState({

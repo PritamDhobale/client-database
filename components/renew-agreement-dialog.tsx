@@ -1,15 +1,19 @@
 "use client"
 
-import type React from "react"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { supabase } from "@/lib/supabaseClient"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select"
 import { RefreshCw } from "lucide-react"
-
 import {
   Dialog,
   DialogContent,
@@ -17,123 +21,121 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  DialogTrigger
 } from "@/components/ui/dialog"
 
 interface RenewAgreementDialogProps {
   agreementId: string
+  clientId: string // ✅ Add this
   clientName: string
   currentEndDate: string
   trigger?: React.ReactNode
   onRenew?: (agreementId: string, startDate: string, term: string) => void
 }
 
-export function RenewAgreementDialog({
+
+export default function RenewAgreementDialog({
   agreementId,
+  clientId, // ✅ Add this line
   clientName,
   currentEndDate,
   trigger,
   onRenew,
 }: RenewAgreementDialogProps) {
+
   const [open, setOpen] = useState(false)
   const [renewalType, setRenewalType] = useState("continue")
   const [startDate, setStartDate] = useState("")
+  const [commencementDate, setCommencementDate] = useState("")
   const [term, setTerm] = useState("1 year")
   const [processing, setProcessing] = useState(false)
 
   const calculateDefaultStartDate = () => {
-    // Check if currentEndDate is valid
     if (!currentEndDate || isNaN(new Date(currentEndDate).getTime())) {
-      console.error("No valid current end date available. Using today's date as fallback.");
-      return new Date().toISOString().split("T")[0];  // Return today's date as a fallback
+      return new Date().toISOString().split("T")[0]
     }
-    
-    const endDate = new Date(currentEndDate);
-    const nextDay = new Date(endDate);
-    nextDay.setDate(endDate.getDate() + 1);
-    return nextDay.toISOString().split("T")[0];
-  };
-  
+    const end = new Date(currentEndDate)
+    end.setDate(end.getDate() + 1)
+    return end.toISOString().split("T")[0]
+  }
 
   useEffect(() => {
-    // Reset form when dialog opens
-    setStartDate(calculateDefaultStartDate())
-    setRenewalType("continue")
-    setTerm("1 year")
+    if (open) {
+      const defaultStart = calculateDefaultStartDate()
+      setStartDate(defaultStart)
+      setCommencementDate("")
+      setRenewalType("continue")
+      setTerm("1 year")
+    }
   }, [open])
-
-  const handleOpenChange = (newOpen: boolean) => {
-    setOpen(newOpen)
-  }
 
   const handleSubmit = async () => {
     setProcessing(true)
   
-    const effectiveStartDate = renewalType === "continue"
-      ? calculateDefaultStartDate()
-      : startDate;
+    const agreementStartDate =
+      renewalType === "continue" ? calculateDefaultStartDate() : startDate
+    const start = new Date(agreementStartDate)
+    const end = new Date(start)
   
-    const start = new Date(effectiveStartDate);
-    const newEnd = new Date(start);
-  
-    const termNumber = parseInt(term.split(" ")[0], 10);
-    const termUnit = term.includes("year") ? "year" : "month";
-  
-    if (termUnit === "year") {
-      newEnd.setFullYear(newEnd.getFullYear() + termNumber);
+    const termValue = parseInt(term.split(" ")[0])
+    if (term.includes("year")) {
+      end.setFullYear(start.getFullYear() + termValue)
     } else {
-      newEnd.setMonth(newEnd.getMonth() + termNumber);
+      end.setMonth(start.getMonth() + termValue)
     }
+  
+    const calculatedEndDate = end.toISOString().split("T")[0]
   
     try {
-      const { error: updateError } = await supabase
-        .from("agreements")
-        .update({
-          agreement_date: effectiveStartDate,
-          end_date: newEnd.toISOString(),
-          term: term
-        })
-        .eq("agreement_id", agreementId);
+      // ✅ INSERT instead of UPDATE
+      const { error } = await supabase.from("agreements").insert([
+        {
+          client_id: clientId,
+          agreement_date: agreementStartDate,
+          commencement_date: commencementDate,
+          term: term,
+          end_date: calculatedEndDate,
+          created_at: new Date().toISOString(),
+        },
+      ])            
   
-      if (updateError) {
-        console.error("Renewal failed:", updateError);
-        return;
+      if (error) {
+        console.error("Insert failed:", error)
+        return
       }
   
-      // ✅ Insert into notifications
+      // 🔔 Notification
       await supabase.from("notifications").insert([
         {
-          message: `Agreement for ${clientName} renewed until ${newEnd.toLocaleDateString()}`,
-          type: "success",
-          created_at: new Date().toISOString()
-        }
-      ]);
+          message: `Agreement for ${clientName} renewed.`,
+          type: "info",
+          created_at: new Date().toISOString(),
+        },
+      ])
   
-      // ✅ Insert into history
-      await supabase.from("history").insert([
+      // 🕓 History
+      await supabase.from("history_logs").insert([
         {
           action: "renew_agreement",
-          message: `Agreement ${agreementId} renewed for ${clientName}`,
-          created_at: new Date().toISOString()
-        }
-      ]);
+          message: `New agreement created for client ${clientName} with start ${agreementStartDate} and term ${term}`,
+          created_at: new Date().toISOString(),
+        },
+      ])
   
-      // Optional callback
-      if (onRenew) {
-        onRenew(agreementId, effectiveStartDate, term);
-      }
+      if (onRenew) onRenew(agreementId, agreementStartDate, term)
   
-      setOpen(false);
+      setOpen(false)
     } catch (err) {
-      console.error("Unexpected error during renewal:", err);
+      console.error("Unexpected error:", err)
     } finally {
-      setProcessing(false);
+      setProcessing(false)
     }
-  };
+  }
+  
   
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || (
           <Button variant="outline" size="sm">
@@ -142,72 +144,69 @@ export function RenewAgreementDialog({
           </Button>
         )}
       </DialogTrigger>
+
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Renew Agreement</DialogTitle>
           <DialogDescription>
-            Renew agreement for {clientName} (Agreement ID: {agreementId})
+            Update agreement for <strong>{clientName}</strong> (ID: {agreementId})
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          <div className="space-y-2">
+          <div>
             <Label>Current End Date</Label>
             <div className="text-sm">{new Date(currentEndDate).toLocaleDateString()}</div>
           </div>
 
           <div className="space-y-2">
-            <Label>Renewal Start Date</Label>
-            <RadioGroup value={renewalType} onValueChange={setRenewalType} className="space-y-2">
-              <div className="flex items-center space-x-2">
+            <Label>New Start Date</Label>
+            <RadioGroup value={renewalType} onValueChange={setRenewalType}>
+              <div className="flex items-center gap-2">
                 <RadioGroupItem value="continue" id="continue" />
                 <Label htmlFor="continue" className="font-normal">
-                  Continue from previous end date ({new Date(calculateDefaultStartDate()).toLocaleDateString()})
+                  Continue from {new Date(calculateDefaultStartDate()).toLocaleDateString()}
                 </Label>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center gap-2">
                 <RadioGroupItem value="custom" id="custom" />
-                <Label htmlFor="custom" className="font-normal">
-                  Specify new start date
-                </Label>
+                <Label htmlFor="custom" className="font-normal">Set Custom Start Date</Label>
               </div>
             </RadioGroup>
-          </div>
-
-          {renewalType === "custom" && (
-            <div className="space-y-2">
-              <Label htmlFor="startDate">New Start Date</Label>
+            {renewalType === "custom" && (
               <Input
-                id="startDate"
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                min={new Date().toISOString().split("T")[0]}
               />
-            </div>
-          )}
+            )}
+          </div>
 
           <div className="space-y-2">
-            <Label htmlFor="term">New Term</Label>
+            <Label>Commencement Date</Label>
+            <Input
+              type="date"
+              value={commencementDate}
+              onChange={(e) => setCommencementDate(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Term</Label>
             <Select value={term} onValueChange={setTerm}>
-              <SelectTrigger id="term">
-                <SelectValue placeholder="Select term" />
-              </SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Select term" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="6 months">6 months</SelectItem>
                 <SelectItem value="1 year">1 year</SelectItem>
                 <SelectItem value="2 years">2 years</SelectItem>
                 <SelectItem value="3 years">3 years</SelectItem>
-                <SelectItem value="5 years">5 years</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancel
-          </Button>
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
           <Button onClick={handleSubmit} disabled={processing || (renewalType === "custom" && !startDate)}>
             {processing ? "Processing..." : "Renew Agreement"}
           </Button>

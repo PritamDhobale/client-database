@@ -26,16 +26,45 @@ export function Notifications() {
         .from("notifications")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(10)
+  
       if (!error && data) {
-        setNotifications(data)
-      } else {
-        console.error("Fetch notifications error", error)
+        const now = Date.now()
+        const fresh: any[] = []
+        const expired: any[] = []
+  
+        for (const n of data) {
+          const created = new Date(n.created_at).getTime()
+          const diff = (now - created) / (1000 * 60 * 60) // in hours
+        
+          if (diff > 24) {
+            expired.push({
+              id: n.id, // ✅ Needed to delete properly
+              action: "notification",
+              message: n.message,
+              created_at: n.created_at,
+            })
+          } else {
+            fresh.push(n)
+          }
+        }
+        
+  
+        // Move expired notifications to history
+        if (expired.length) {
+          const inserts = expired.map(({ id, ...rest }) => rest)
+          const idsToDelete = expired.map((n) => n.id)
+        
+          await supabase.from("history_logs").insert(inserts)
+          await supabase.from("notifications").delete().in("id", idsToDelete)
+        }        
+
+        setNotifications(fresh)
       }
     }
-
+  
     fetchNotifications()
   }, [])
+  
 
   const unreadCount = notifications.filter((notification) => !notification.read).length
 
@@ -45,14 +74,32 @@ export function Notifications() {
     )
   }
 
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((notification) => ({ ...notification, read: true })))
-  }
+  const markAllAsRead = async () => {
+    const now = new Date().toISOString()
+  
+    const inserts = notifications.map((n) => ({
+      action: "notification",
+      message: n.message,
+      created_at: now,
+    }))
+  
+    await supabase.from("history_logs").insert(inserts)
+  
+    const idsToDelete = notifications.map((n) => n.id)
+    await supabase.from("notifications").delete().in("id", idsToDelete)
+  
+    setNotifications([])
+  } 
+  
 
-  const clearNotification = (id: number, e: React.MouseEvent) => {
+  const clearNotification = async (id: number, e: React.MouseEvent) => {
     e.stopPropagation()
-    setNotifications((prev) => prev.filter((notification) => notification.id !== id))
+  
+    await supabase.from("notifications").delete().eq("id", id)
+  
+    setNotifications((prev) => prev.filter((n) => n.id !== id))
   }
+  
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -112,7 +159,7 @@ export function Notifications() {
                   <div className="flex items-center">
                     {getNotificationIcon(notification.type)}
                     <span className={cn("ml-2 font-medium", !notification.read && "text-primary")}>
-                      {notification.title}
+                    {notification.title || "New Notification"}
                     </span>
                   </div>
                   <Button

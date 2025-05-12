@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { MoreHorizontal, Search, FileEdit, Download, ChevronDown, ChevronRight, FileText } from "lucide-react"
 import { supabase } from "@/lib/supabaseClient"
 import { Badge } from "@/components/ui/badge"
-import { RenewAgreementDialog } from "@/components/renew-agreement-dialog"
+import RenewAgreementDialog from "@/components/renew-agreement-dialog"
 import { ExportAgreementsDialog } from "@/components/export-agreements-dialog"
 import {
   DropdownMenu,
@@ -21,7 +21,7 @@ import { Separator } from "@radix-ui/react-dropdown-menu"
 
 // Define the structure of AgreementDetails
 interface AgreementDetails {
-  agreement_id: string
+  agreement_id: number
   client_id: string
   agreement_date: string
   commencement_date: string
@@ -273,13 +273,30 @@ export function AgreementsTable() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                      <RenewAgreementDialog
-                        agreementId={clientData.agreement_id}
-                        clientName={clientData.practice_name}
-                        currentEndDate={clientData.end_date || new Date().toISOString()}  // Fallback to today's date if no end_date
-                        onRenew={handleRenewAgreement}
-                      />
+                      {(() => {
+                        type Agreement = { agreement_id: number; end_date?: string; agreement_date?: string }
 
+                        const latestAgreement = (clientData.agreements as Agreement[])
+                          .filter((a: Agreement) => a.end_date || a.agreement_date)
+                          .sort((a: Agreement, b: Agreement) => {
+                            const dateA = new Date(a.end_date || a.agreement_date || "")
+                            const dateB = new Date(b.end_date || b.agreement_date || "")
+                            return dateB.getTime() - dateA.getTime()
+                          })[0];
+
+                        if (!latestAgreement) return null;
+
+                        return (
+                          <RenewAgreementDialog
+                            key={latestAgreement.agreement_id}
+                            agreementId={latestAgreement.agreement_id.toString()}
+                            clientId={clientData.clientId} // ✅ NEW LINE
+                            clientName={clientData.practice_name}
+                            currentEndDate={latestAgreement.end_date || new Date().toISOString()}
+                            onRenew={handleRenewAgreement}
+                          />
+                        );
+                      })()}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="h-8 w-8 p-0">

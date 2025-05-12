@@ -78,18 +78,18 @@ export function DashboardChart() {
   }
 
   return (
-    <div className="h-[300px] w-full">
+    <div className="h-[300px] w-full flex justify-center">
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie
             data={chartData}
-            cx="50%"
+            cx="30%" // Move the pie chart more to the left
             cy="50%"
             labelLine={false}
             outerRadius={100}
             fill="#8884d8"
             dataKey="value"
-            label={renderCustomizedLabel} // ✅ Apply custom label
+            label={renderCustomizedLabel}
           >
             {chartData.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -97,13 +97,13 @@ export function DashboardChart() {
           </Pie>
           <Tooltip />
           <Legend
-            layout="horizontal"
-            align="center"
-            verticalAlign="bottom"
-            wrapperStyle={{ width: '100%', paddingBottom: '10px', fontSize: '14px' }}
+            layout="vertical"          // ✅ Vertical layout
+            align="right"              // ✅ Push to the right
+            verticalAlign="middle"     // ✅ Centered on height
+            wrapperStyle={{ fontSize: '14px', lineHeight: '24px' }}
           />
         </PieChart>
       </ResponsiveContainer>
     </div>
-  )
+  )  
 }

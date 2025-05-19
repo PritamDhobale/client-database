@@ -38,20 +38,23 @@ export function FileViewerDialog({ clientId, clientName, trigger }: FileViewerDi
   // Fetch documents for the client
   useEffect(() => {
     const fetchDocuments = async () => {
+      if (!open) return;
+  
       const { data, error } = await supabase
         .from("client_documents")
         .select("file_name, file_url, created_at, size")
         .eq("client_id", clientId)
-
+  
       if (error) {
         console.error("Error fetching documents:", error)
       } else {
         setDocuments(data)
       }
     }
-
+  
     fetchDocuments()
-  }, [clientId])
+  }, [open, clientId])
+  
 
   // Function to determine the icon based on document type
   const getDocumentIcon = (type: string) => {
@@ -72,9 +75,25 @@ export function FileViewerDialog({ clientId, clientName, trigger }: FileViewerDi
   const filteredDocuments = documents.filter((doc) => doc.file_name.toLowerCase().includes(searchTerm.toLowerCase()))
 
   // Download document handler
-  const handleDownload = (fileUrl: string) => {
-    window.open(fileUrl, "_blank") // Opens the file URL in a new tab
-  }
+  const handleDownload = async (filePath: string) => {
+    const { data, error } = await supabase
+      .storage
+      .from("client-documents") // ✅ correct bucket name
+      .createSignedUrl(filePath, 60)
+  
+    if (error || !data) {
+      console.error("Download error:", error)
+      return
+    }
+  
+    // const link = document.createElement("a")
+    // link.href = data.signedUrl
+    // link.download = filePath.split("/").pop() || "document"
+    // link.click()
+    window.open(data.signedUrl, "_blank")
+
+  }  
+  
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -146,14 +165,15 @@ export function FileViewerDialog({ clientId, clientName, trigger }: FileViewerDi
                     <TableCell>{new Date(doc.created_at).toLocaleDateString()}</TableCell>
                     <TableCell>{doc.size}</TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDownload(doc.file_url)} // Download action
-                      >
-                        <Download className="h-4 w-4 mr-1" />
-                        Download
-                      </Button>
+                    <Button
+  variant="ghost"
+  size="sm"
+  onClick={() => handleDownload(doc.file_url)} // ✅ encode
+>
+  <Download className="h-4 w-4 mr-1" />
+  Download
+</Button>
+
                     </TableCell>
                   </TableRow>
                 ))}

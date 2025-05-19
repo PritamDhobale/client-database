@@ -39,11 +39,16 @@ export default function HistoryPage() {
             <Card key={item.id}>
               <CardHeader>
                 <CardTitle className="text-sm font-medium">
-                  {item.action}
+                  {item.action_type || "Unknown Action"}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-gray-600">User: {item.user || "Unknown"}</p>
+                <p className="text-sm text-gray-600">
+                  <strong>Title:</strong> {item.title || "Untitled"}<br />
+                  <strong>Type:</strong> {item.type || "N/A"}<br />
+                  <strong>Client ID:</strong> {item.client_id || "N/A"}
+                </p>
+                <p className="text-sm text-gray-700 mt-1">{item.description}</p>
                 <p className="text-xs text-gray-500 mt-1">
                   {new Date(item.created_at).toLocaleString()}
                 </p>

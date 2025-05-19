@@ -77,7 +77,7 @@ export function FileUploadDialog({ clientId, clientName, trigger, onUploadComple
     }, 200);
   
     const file = files[0];
-    const filePath = `client-documents/${clientId}/${encodeURIComponent(file.name)}`;
+    const filePath = `${clientId}/${encodeURIComponent(file.name)}`; // ✅ NO prefix
   
     try {
       const { data, error } = await supabase.storage
@@ -98,7 +98,7 @@ export function FileUploadDialog({ clientId, clientName, trigger, onUploadComple
         {
           client_id: clientId,
           file_name: file.name,
-          file_url: fileUrl,
+          file_url: filePath,
           size: fileSize,
         },
       ]);

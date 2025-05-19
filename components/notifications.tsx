@@ -34,36 +34,55 @@ export function Notifications() {
   
         for (const n of data) {
           const created = new Date(n.created_at).getTime()
-          const diff = (now - created) / (1000 * 60 * 60) // in hours
-        
+          const diff = (now - created) / (1000 * 60 * 60) // hours
           if (diff > 24) {
             expired.push({
-              id: n.id, // ✅ Needed to delete properly
-              action: "notification",
-              message: n.message,
+              id: n.id,
+              action_type: "notification",
+              description: n.message,
+              title: n.title,
+              type: n.type,
+              client_id: n.client_id,
               created_at: n.created_at,
-            })
+            })            
           } else {
             fresh.push(n)
           }
         }
+  
+        // if (expired.length) {
+        //   const inserts = expired.map(({ id, ...rest }) => rest)
+        //   const idsToDelete = expired.map((n) => n.id)
+        //   await supabase.from("history_logs").insert(inserts)
+        //   await supabase.from("notifications").delete().in("id", idsToDelete)
+        // }
+        if (expired.length) {
+          for (const { id, ...rest } of expired) {
+            // Check if this already exists in history_logs
+            const { data: existing, error: fetchError } = await supabase
+              .from("history_logs")
+              .select("id")
+              .eq("description", rest.description)
+              .eq("created_at", rest.created_at)
+              .maybeSingle()
+        
+            if (!existing) {
+              await supabase.from("history_logs").insert([rest])
+            }
+        
+            await supabase.from("notifications").delete().eq("id", id)
+          }
+        }
         
   
-        // Move expired notifications to history
-        if (expired.length) {
-          const inserts = expired.map(({ id, ...rest }) => rest)
-          const idsToDelete = expired.map((n) => n.id)
-        
-          await supabase.from("history_logs").insert(inserts)
-          await supabase.from("notifications").delete().in("id", idsToDelete)
-        }        
-
         setNotifications(fresh)
       }
     }
   
     fetchNotifications()
-  }, [])
+    const interval = setInterval(fetchNotifications, 60 * 1000)
+    return () => clearInterval(interval)
+  }, [])  
   
 
   const unreadCount = notifications.filter((notification) => !notification.read).length
@@ -78,10 +97,10 @@ export function Notifications() {
     const now = new Date().toISOString()
   
     const inserts = notifications.map((n) => ({
-      action: "notification",
-      message: n.message,
+      action_type: "notification",
+      description: n.message,
       created_at: now,
-    }))
+    }))    
   
     await supabase.from("history_logs").insert(inserts)
   

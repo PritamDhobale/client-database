@@ -243,29 +243,37 @@ export function NewClientForm() {
   
       if (documents.length > 0) {
         for (const doc of documents) {
-          const filePath = `${clientId}/${doc.name}`;
+          const filePath = `${clientId}/${encodeURIComponent(doc.name)}`;
   
           const { error: uploadError } = await supabase.storage
-            .from("client_documents")
-            .upload(filePath, doc);
+          .from("client-documents") // ✅ correct bucket name
+          .upload(filePath, doc);
   
           if (uploadError) {
             console.error("Upload failed:", uploadError);
             continue;
           }
   
-          const {
-            data: { publicUrl },
-          } = supabase.storage.from("client_documents").getPublicUrl(filePath);
+          // const {
+          //   data: { publicUrl },
+          // } = supabase.storage.from("client_documents").getPublicUrl(filePath);
   
+          // const { error: insertError } = await supabase.from("client_documents").insert([
+          //   {
+          //     client_id: clientId,
+          //     file_name: doc.name,
+          //     file_url: publicUrl,
+          //     size: doc.size,
+          //   },
+          // ]);
           const { error: insertError } = await supabase.from("client_documents").insert([
             {
               client_id: clientId,
               file_name: doc.name,
-              file_url: publicUrl,
+              file_url: filePath, // ✅ save path only
               size: doc.size,
             },
-          ]);
+          ]);          
   
           if (insertError) {
             console.error("Failed to insert file record:", insertError);

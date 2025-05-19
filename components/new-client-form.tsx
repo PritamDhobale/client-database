@@ -139,6 +139,7 @@ export function NewClientForm() {
     authorized_rep_first_name: "",
     authorized_rep_last_name: "",
     authorized_rep_phone: "",
+    authorized_rep_credential: "",
     authorized_rep_title: "",
     authorized_rep_email: "",
     city: "",
@@ -332,6 +333,7 @@ export function NewClientForm() {
         authorized_rep_first_name: "",
         authorized_rep_last_name: "",
         authorized_rep_phone: "",
+        authorized_rep_credential: "",
         authorized_rep_title: "",
         authorized_rep_email: "",
         city: "",
@@ -557,6 +559,16 @@ const handleUploadCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
                 id="authorized_rep_last_name"
                 value={formData.authorized_rep_last_name}
                 onChange={(e) => handleChange("authorized_rep_last_name", e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="authorized_rep_credential">Authorized Contact Credential *</Label>
+              <Input
+                id="authorized_rep_credential"
+                value={formData.authorized_rep_credential}
+                onChange={(e) => handleChange("authorized_rep_credential", e.target.value)}
                 required
               />
             </div>

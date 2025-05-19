@@ -261,10 +261,28 @@ const groupedServices = filteredServices.reduce((acc: Record<string, any>, servi
               <Card>
                 <CardContent className="p-3">
                   <div className="space-y-4 py-2">
+                    {/* <div className="flex items-center justify-between">
+                      <h3 className="font-medium">Filter Services</h3>
+                    </div> */}
                     <div className="flex items-center justify-between">
                       <h3 className="font-medium">Filter Services</h3>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setFilters({
+                            clientId: "",
+                            practiceName: "",
+                            serviceName: [],
+                            nppStatus: "",
+                          });
+                          setActiveFilters([]);
+                        }}
+                        className="h-8 px-2 text-xs"
+                      >
+                        Clear all
+                      </Button>
                     </div>
-
                     <div className="space-y-4">
                       <div className="grid grid-cols-1 gap-3">
                         <div className="space-y-2">
@@ -347,7 +365,7 @@ const groupedServices = filteredServices.reduce((acc: Record<string, any>, servi
                       </div>
                     </div>
 
-                    <div className="pt-2 flex justify-end">
+                    {/* <div className="pt-2 flex justify-end">
                     <Button
                       variant="ghost"
                       onClick={() => {
@@ -365,7 +383,7 @@ const groupedServices = filteredServices.reduce((acc: Record<string, any>, servi
                       <Button onClick={() => setIsFilterOpen(false)} className="w-full">
                         Apply Filters
                       </Button>
-                    </div>
+                    </div> */}
                   </div>
                 </CardContent>
               </Card>

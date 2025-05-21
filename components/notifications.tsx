@@ -5,6 +5,7 @@ import { Bell, Check, Clock, FileText, User, Calendar, DollarSign, X } from "luc
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { supabase } from "@/lib/supabaseClient"
+import { useRouter } from "next/navigation"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +20,7 @@ import { cn } from "@/lib/utils"
 export function Notifications() {
   const [notifications, setNotifications] = useState<any[]>([])
   const [open, setOpen] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -201,9 +203,16 @@ export function Notifications() {
           </DropdownMenuGroup>
         )}
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="justify-center text-sm text-primary cursor-pointer">
-          View all notifications
-        </DropdownMenuItem>
+        <DropdownMenuItem
+  className="justify-center text-sm text-primary cursor-pointer"
+  onClick={() => {
+    setOpen(false); // Close the dropdown
+    router.push("/history");
+  }}
+>
+  View all notifications
+</DropdownMenuItem>
+
       </DropdownMenuContent>
     </DropdownMenu>
   )

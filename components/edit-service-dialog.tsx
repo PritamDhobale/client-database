@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/lib/supabaseClient"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch";
 import { FileEdit } from "lucide-react";
 import {
@@ -151,12 +152,22 @@ export function EditServiceDialog({ service, trigger, onSave }: EditServiceDialo
             <Label htmlFor="nppStatus" className="cursor-pointer">
               NPP Status
             </Label>
-            <Input
-              id="nppStatus"
-              value={formData.nppStatus}
-              onChange={(e) => handleChange("nppStatus", e.target.value)}
-              placeholder="Not Available"
-            />
+            <Select
+  value={formData.nppStatus}
+  onValueChange={(value) => handleChange("nppStatus", value)}
+>
+  <SelectTrigger id="nppStatus">
+    <SelectValue placeholder="Select NPP Status" />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectItem value="Enrolled - eCheck">Enrolled - eCheck</SelectItem>
+    <SelectItem value="Enrolled - Manual Check">Enrolled - Manual Check</SelectItem>
+    <SelectItem value="Corp - Bank Wire / ACH">Corp - Bank Wire / ACH</SelectItem>
+    <SelectItem value="Not Enrolled">Not Enrolled</SelectItem>
+    <SelectItem value="Enrolled - Credit Card">Enrolled - Credit Card</SelectItem>
+  </SelectContent>
+</Select>
+
           </div>
 
           <div className="space-y-2">

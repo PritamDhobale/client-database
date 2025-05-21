@@ -194,8 +194,206 @@ export function NewClientForm() {
   }, []);
   
 
+  // const handleSubmit = async () => {
+    
+  //   setSaving(true);
+  //   try {
+  //     const {
+  //       agreement_date,
+  //       commencement_date,
+  //       term,
+  //       service_ids,
+  //       ...clientData
+  //     } = formData;
+  
+  //     const payload = {
+  //       ...clientData,
+  //       zip: Number(formData.zip || 0),
+  //       created_at: new Date().toISOString(),
+  //     };
+
+  //     const requiredFields = [
+  //       "practice_name", "primary_contact_first_name", "primary_contact_last_name",
+  //       "primary_contact_email", "primary_contact_phone"
+  //     ];
+      
+  //     const missing = requiredFields.filter(field => !formData[field]);
+  //     if (missing.length > 0) {
+  //       alert(`Please fill in the required fields: ${missing.join(", ")}`);
+  //       setSaving(false);
+  //       return;
+  //     }
+      
+  
+  //     const { data, error } = await supabase
+  //       .from("Clients")
+  //       .insert([payload])
+  //       .select("*");
+  
+  //     if (error) {
+  //       console.error("Failed to add client:", error);
+  //       return;
+  //     }
+  
+  //     const clientId = data[0].client_id;
+  
+  //     // ✅ Log notification
+  //     await supabase.from("notifications").insert([
+  //       {
+  //         message: `New client added: ${formData.practice_name}`,
+  //         type: "client",
+  //         created_at: new Date().toISOString(),
+  //       },
+  //     ]);
+  
+  //     // ✅ Log history
+  //     await supabase.from("history").insert([
+  //       {
+  //         action: "add",
+  //         entity: "client",
+  //         description: `Client ${formData.practice_name} added.`,
+  //         timestamp: new Date().toISOString(),
+  //       },
+  //     ]);
+  
+  //     if (documents.length > 0) {
+  //       for (const doc of documents) {
+  //         const filePath = `${clientId}/${encodeURIComponent(doc.name)}`;
+  
+  //         const { error: uploadError } = await supabase.storage
+  //         .from("client-documents") // ✅ correct bucket name
+  //         .upload(filePath, doc);
+  
+  //         if (uploadError) {
+  //           console.error("Upload failed:", uploadError);
+  //           continue;
+  //         }
+  
+  //         // const {
+  //         //   data: { publicUrl },
+  //         // } = supabase.storage.from("client_documents").getPublicUrl(filePath);
+  
+  //         // const { error: insertError } = await supabase.from("client_documents").insert([
+  //         //   {
+  //         //     client_id: clientId,
+  //         //     file_name: doc.name,
+  //         //     file_url: publicUrl,
+  //         //     size: doc.size,
+  //         //   },
+  //         // ]);
+  //         const { error: insertError } = await supabase.from("client_documents").insert([
+  //           {
+  //             client_id: clientId,
+  //             file_name: doc.name,
+  //             file_url: filePath, // ✅ save path only
+  //             size: doc.size,
+  //           },
+  //         ]);          
+  
+  //         if (insertError) {
+  //           console.error("Failed to insert file record:", insertError);
+  //         }
+  //       }
+  //     }
+  
+  //     const agreementPayload = {
+  //       client_id: clientId,
+  //       agreement_date,
+  //       commencement_date,
+  //       term,
+  //       created_at: new Date().toISOString(),
+  //     };
+  
+  //     const { error: agreementError } = await supabase
+  //       .from("agreements")
+  //       .insert([agreementPayload]);
+  
+  //     if (agreementError) {
+  //       console.error("Failed to add agreement:", agreementError);
+  //       return;
+  //     }
+  
+  //     const servicesToAdd = service_ids.map((serviceId: string) => ({
+  //       client_id: clientId,
+  //       id: serviceId,
+  //     }));
+  
+  //     const { error: serviceError } = await supabase
+  //       .from("client_services")
+  //       .upsert(servicesToAdd);
+  
+  //     if (serviceError) {
+  //       console.error("Failed to add services:", serviceError);
+  //     }
+  
+  //     setOpen(false);
+  //     setFormData({
+  //       practice_name: "",
+  //       dba: "",
+  //       code: "",
+  //       client_status: "",
+  //       sla_number: "",
+  //       primary_contact_title: "",
+  //       primary_contact_first_name: "",
+  //       primary_contact_last_name: "",
+  //       primary_contact_email: "",
+  //       primary_contact_phone: "",
+  //       email: "",
+  //       admin_contact_first_name: "",
+  //       admin_contact_last_name: "",
+  //       admin_contact_phone: "",
+  //       admin_contact_title: "",
+  //       admin_contact_email: "",
+  //       authorized_rep_first_name: "",
+  //       authorized_rep_last_name: "",
+  //       authorized_rep_phone: "",
+  //       authorized_rep_credential: "",
+  //       authorized_rep_title: "",
+  //       authorized_rep_email: "",
+  //       city: "",
+  //       state: "",
+  //       state_of_formation: "",
+  //       category_id: "",
+  //       street_address: "",
+  //       current_ehr: "",
+  //       type_of_entity: "",
+  //       website: "",
+  //       zip: "",
+  //       agreement_date: "",
+  //       commencement_date: "",
+  //       term: "",
+  //       service_ids: [],
+  //     });
+  //   } catch (err) {
+  //     console.error("Unexpected error while adding client:", err);
+  //   } finally {
+  //     setSaving(false);
+  //   }
+  // };
+
   const handleSubmit = async () => {
     setSaving(true);
+  
+    // Step 1: Validate required fields first
+    const requiredFields = [
+      "practice_name",
+      "primary_contact_first_name",
+      "primary_contact_last_name",
+      "primary_contact_email",
+      "primary_contact_phone",
+    ];
+  
+    const missing = requiredFields.filter(
+      (field) => !(formData as Record<string, any>)[field]
+    );
+    
+    if (missing.length > 0) {
+      alert(`Please fill in the required fields: ${missing.join(", ")}`);
+      setSaving(false);
+      return;
+    }
+    
+  
     try {
       const {
         agreement_date,
@@ -205,12 +403,15 @@ export function NewClientForm() {
         ...clientData
       } = formData;
   
+      // Step 2: Sanitize numeric fields
       const payload = {
         ...clientData,
-        zip: Number(formData.zip || 0),
+        zip: formData.zip !== "" ? Number(formData.zip) : null,
+        category_id: formData.category_id !== "" ? Number(formData.category_id) : null,
         created_at: new Date().toISOString(),
       };
   
+      // Step 3: Insert client
       const { data, error } = await supabase
         .from("Clients")
         .insert([payload])
@@ -223,7 +424,7 @@ export function NewClientForm() {
   
       const clientId = data[0].client_id;
   
-      // ✅ Log notification
+      // Step 4: Log notification
       await supabase.from("notifications").insert([
         {
           message: `New client added: ${formData.practice_name}`,
@@ -232,7 +433,7 @@ export function NewClientForm() {
         },
       ]);
   
-      // ✅ Log history
+      // Step 5: Log history
       await supabase.from("history").insert([
         {
           action: "add",
@@ -242,39 +443,29 @@ export function NewClientForm() {
         },
       ]);
   
+      // Step 6: Handle document uploads
       if (documents.length > 0) {
         for (const doc of documents) {
           const filePath = `${clientId}/${encodeURIComponent(doc.name)}`;
-  
           const { error: uploadError } = await supabase.storage
-          .from("client-documents") // ✅ correct bucket name
-          .upload(filePath, doc);
+            .from("client-documents")
+            .upload(filePath, doc);
   
           if (uploadError) {
             console.error("Upload failed:", uploadError);
             continue;
           }
   
-          // const {
-          //   data: { publicUrl },
-          // } = supabase.storage.from("client_documents").getPublicUrl(filePath);
-  
-          // const { error: insertError } = await supabase.from("client_documents").insert([
-          //   {
-          //     client_id: clientId,
-          //     file_name: doc.name,
-          //     file_url: publicUrl,
-          //     size: doc.size,
-          //   },
-          // ]);
-          const { error: insertError } = await supabase.from("client_documents").insert([
-            {
-              client_id: clientId,
-              file_name: doc.name,
-              file_url: filePath, // ✅ save path only
-              size: doc.size,
-            },
-          ]);          
+          const { error: insertError } = await supabase
+            .from("client_documents")
+            .insert([
+              {
+                client_id: clientId,
+                file_name: doc.name,
+                file_url: filePath,
+                size: doc.size,
+              },
+            ]);
   
           if (insertError) {
             console.error("Failed to insert file record:", insertError);
@@ -282,6 +473,7 @@ export function NewClientForm() {
         }
       }
   
+      // Step 7: Insert agreement
       const agreementPayload = {
         client_id: clientId,
         agreement_date,
@@ -299,6 +491,7 @@ export function NewClientForm() {
         return;
       }
   
+      // Step 8: Link services
       const servicesToAdd = service_ids.map((serviceId: string) => ({
         client_id: clientId,
         id: serviceId,
@@ -312,6 +505,7 @@ export function NewClientForm() {
         console.error("Failed to add services:", serviceError);
       }
   
+      // Step 9: Reset form
       setOpen(false);
       setFormData({
         practice_name: "",
@@ -350,12 +544,14 @@ export function NewClientForm() {
         term: "",
         service_ids: [],
       });
+      setDocuments([]);
     } catch (err) {
       console.error("Unexpected error while adding client:", err);
     } finally {
       setSaving(false);
     }
   };
+  
     
   // Download CSV template with headers only
 const downloadTemplate = () => {
@@ -422,11 +618,25 @@ const handleUploadCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
           <DialogDescription>Enter the client details below to create a new client record.</DialogDescription>
         </DialogHeader>
         <div className="flex justify-end gap-4 pb-2">
-          <Button variant="outline" onClick={downloadTemplate}>
-            Download Client Form Template
-          </Button>
-          <Input type="file" accept=".csv" onChange={handleUploadCSV} className="w-fit" />
-        </div>
+  <Button
+    onClick={downloadTemplate}
+    className="bg-[#8bc53d] hover:bg-[#79b231] text-white font-semibold shadow-md"
+  >
+    Download Client Form Template
+  </Button>
+
+  <label className="cursor-pointer bg-[#8bc53d] hover:bg-[#79b231] text-white font-semibold shadow-md px-4 py-2 rounded text-sm flex items-center justify-center">
+    Upload Client Form
+    <Input
+      type="file"
+      accept=".csv"
+      onChange={handleUploadCSV}
+      className="hidden"
+    />
+  </label>
+</div>
+
+
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
           {/* Basic Information */}
@@ -543,6 +753,26 @@ const handleUploadCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
               />
             </div>
             <Separator />
+            <div className="flex items-center space-x-2">
+  <input
+    type="checkbox"
+    id="same-as-primary"
+    onChange={(e) => {
+      if (e.target.checked) {
+        setFormData((prev) => ({
+          ...prev,
+          authorized_rep_first_name: prev.primary_contact_first_name,
+          authorized_rep_last_name: prev.primary_contact_last_name,
+          authorized_rep_email: prev.primary_contact_email,
+          authorized_rep_phone: prev.primary_contact_phone,
+          authorized_rep_credential: prev.primary_contact_title,
+        }))
+      }
+    }}
+  />
+  <label htmlFor="same-as-primary" className="text-sm font-medium">Same as Primary Contact</label>
+</div>
+
             <div className="space-y-2">
               <Label htmlFor="authorized_rep_first_name">Authorized Contact First Name *</Label>
               <Input
@@ -625,14 +855,23 @@ const handleUploadCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="category_id">Category ID</Label>
-              <Input
-                id="category_id"
-                value={formData.category_id}
-                onChange={(e) => handleChange("category_id", e.target.value)}
-                required
-              />
-            </div>            
+  <Label htmlFor="category_id">Category</Label>
+  <Select
+    value={formData.category_id}
+    onValueChange={(value) => handleChange("category_id", value)}
+  >
+    <SelectTrigger id="category_id">
+      <SelectValue placeholder="Select category" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="1">INDEPENDENT PRACTICES: Direct House</SelectItem>
+      <SelectItem value="2">INDEPENDENT PRACTICES: Channel Partner</SelectItem>
+      <SelectItem value="3">CORPORATE PRACTICES: House Account</SelectItem>
+      <SelectItem value="4">CORPORATE ADVISORY</SelectItem>
+    </SelectContent>
+  </Select>
+</div>
+        
 
             <Separator />
 
@@ -686,13 +925,10 @@ const handleUploadCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
                 </SelectContent>
               </Select>
               </div>
-            </div>
-
-            <div className="space-y-2">
+              <div className="space-y-2">
               <Label htmlFor="zip">Zip Code</Label>
               <Input id="zip" value={formData.zip} onChange={(e) => handleChange("zip", e.target.value)} />
             </div>
-
             <div className="space-y-2">
                 <Label htmlFor="agreement_date">Agreement Date</Label>
                 <Input
@@ -712,14 +948,22 @@ const handleUploadCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
                 />
             </div>
             <div className="space-y-2">
-                <Label htmlFor="term">Term</Label>
-                <Input
-                  id="term"
-                  type="text"
-                  value={formData.term}
-                  onChange={(e) => handleChange("term", e.target.value)}
-                />
-            </div>
+  <Label htmlFor="term">Term</Label>
+  <Select value={formData.term} onValueChange={(value) => handleChange("term", value)}>
+    <SelectTrigger id="term">
+      <SelectValue placeholder="Select term" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="6 Month">6 Month</SelectItem>
+      <SelectItem value="1 Year">1 Year</SelectItem>
+      <SelectItem value="2 Years">2 Years</SelectItem>
+      <SelectItem value="3 Years">3 Years</SelectItem>
+      <SelectItem value="4 Years">4 Years</SelectItem>
+      <SelectItem value="5 Years">5 Years</SelectItem>
+    </SelectContent>
+  </Select>
+</div>
+
             <div className="space-y-2">
   <Label htmlFor="services">Services</Label>
   <div className="border rounded-md p-2">
@@ -742,17 +986,24 @@ const handleUploadCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
     ))}
   </div>
 </div>
-
-            
-            <div className="space-y-2">
+<div className="space-y-2">
               <Label htmlFor="code">Code</Label>
               <Input id="code" value={formData.code} onChange={(e) => handleChange("code", e.target.value)} />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="client_status">Status</Label>
-              <Input id="client_status" value={formData.client_status} onChange={(e) => handleChange("client_status", e.target.value)} />
-            </div>
+  <Label htmlFor="client_status">Status</Label>
+  <Select value={formData.client_status} onValueChange={(value) => handleChange("client_status", value)}>
+    <SelectTrigger id="client_status">
+      <SelectValue placeholder="Select status" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="active">Active</SelectItem>
+      <SelectItem value="inactive">Inactive</SelectItem>
+    </SelectContent>
+  </Select>
+</div>
+
 
             <div className="space-y-2">
               <Label htmlFor="sla_number">SLA Number</Label>
@@ -773,6 +1024,10 @@ const handleUploadCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
               <Label>Upload Documents</Label>
               <Input type="file" multiple onChange={handleDocumentUpload} />
             </div>
+            </div>
+
+            
+            
           </div>
 
             <Separator />

@@ -206,6 +206,52 @@ const filteredServices = services.filter((service) => {
   return true;
 });
 
+const handleExport = (columns: string[], format: string) => {
+  // Map each service row into raw exportable data
+  const exportData = filteredServices.map((service) => ({
+    id: service.client_service_id,
+    clientId: service.clientId,
+    clientName: service.practiceName,
+    serviceName: service.services[0]?.serviceName || "",
+    rate: service.rate,
+    minimumCharge: service.minimum,
+    nppStatus: service.nppStatus,
+    notes: service.notes,
+    createdAt: "", // placeholder if not in data
+    lastModified: "",
+    createdBy: "",
+  }));
+
+  // Subset to selected columns
+  const finalData = exportData.map((row) => {
+    const filtered: Record<string, any> = {};
+    columns.forEach((col) => {
+      filtered[col] = row[col] ?? "";
+    });
+    return filtered;
+  });
+
+  // Convert to CSV
+  if (format === "csv") {
+    const csvRows = [
+      columns.join(","), // header
+      ...finalData.map((row) => columns.map((col) => `"${row[col]}"`).join(",")),
+    ];
+    const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
+
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute("download", "services_export.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  // Future: handle XLSX or PDF
+};
+
+
+
   
   // Group the filtered services by clientId
 const groupedServices = filteredServices.reduce((acc: Record<string, any>, service: any) => {
@@ -391,7 +437,10 @@ const groupedServices = filteredServices.reduce((acc: Record<string, any>, servi
           </Popover>
 
           {/* <NewServiceDialog onAdd={(newService) => setServices([...services, newService])} /> */}
-          <ExportServicesDialog onExport={(columns, format) => console.log(`Exporting services with columns: ${columns}, format: ${format}`)} />
+          {/* <ExportServicesDialog 
+          onExport={(columns, format) => console.log(`Exporting services with columns: ${columns}, format: ${format}`)} /> */}
+          <ExportServicesDialog onExport={handleExport} />
+
         </div>
       </div>
 

@@ -47,9 +47,9 @@ export function ExportServicesDialog({ trigger, onExport }: ExportServicesDialog
     { id: "minimumCharge", label: "Minimum Charge" },
     { id: "nppStatus", label: "NPP Status" },
     { id: "notes", label: "Notes" },
-    { id: "createdAt", label: "Created Date" },
-    { id: "lastModified", label: "Last Modified" },
-    { id: "createdBy", label: "Created By" },
+    // { id: "createdAt", label: "Created Date" },
+    // { id: "lastModified", label: "Last Modified" },
+    // { id: "createdBy", label: "Created By" },
   ]
 
   const toggleColumn = (columnId: string) => {
@@ -66,25 +66,16 @@ export function ExportServicesDialog({ trigger, onExport }: ExportServicesDialog
 
   const handleExport = () => {
     setProcessing(true)
-
-    // In a real app, this would trigger an API call to generate the export
+  
     setTimeout(() => {
       if (onExport) {
         onExport(selectedColumns, exportFormat)
       }
       setProcessing(false)
       setOpen(false)
-
-      // Simulate file download
-      const element = document.createElement("a")
-      element.setAttribute("href", "data:text/plain;charset=utf-8,")
-      element.setAttribute("download", `services_export.${exportFormat}`)
-      element.style.display = "none"
-      document.body.appendChild(element)
-      element.click()
-      document.body.removeChild(element)
-    }, 1000)
+    }, 500)
   }
+  
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

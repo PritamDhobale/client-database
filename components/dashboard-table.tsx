@@ -91,7 +91,7 @@ export function DashboardTable() {
               {/* <TableHead className="text-right">Actions</TableHead> */}
             </TableRow>
           </TableHeader>
-          <TableBody>
+          {/* <TableBody>
             {filteredClients.map((client) => (
               <TableRow key={client.id}>
                 <TableCell className="font-medium">{client.client_id}</TableCell>
@@ -105,7 +105,7 @@ export function DashboardTable() {
                   <Badge variant={client.client_status === "active" ? "default" : "secondary"}>
                     {client.client_status === "active" ? "Active" : "Inactive"}
                   </Badge>
-                </TableCell>
+                </TableCell> */}
                 {/* <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -132,9 +132,32 @@ export function DashboardTable() {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell> */}
-              </TableRow>
+              {/* </TableRow>
             ))}
-          </TableBody>
+          </TableBody> */}
+          <TableBody>
+  {filteredClients.map((client) => (
+    <TableRow
+      key={client.client_id}
+      className="cursor-pointer hover:bg-gray-50"
+      onClick={() => router.push(`/clients/${client.client_id}`)}
+    >
+      <TableCell className="font-medium">{sanitizeValue(client.client_id)}</TableCell>
+      <TableCell>{sanitizeValue(client.practice_name)}</TableCell>
+      <TableCell className="hidden md:table-cell">
+        {`${sanitizeValue(client.primary_contact_first_name)} ${sanitizeValue(client.primary_contact_last_name)}, ${sanitizeValue(client.primary_contact_title)}`}
+      </TableCell>
+      <TableCell className="hidden md:table-cell">{sanitizeValue(client.email)}</TableCell>
+      <TableCell className="hidden md:table-cell">{sanitizeValue(client.state)}</TableCell>
+      <TableCell>
+        <Badge variant={client.client_status === "active" ? "default" : "secondary"}>
+          {sanitizeValue(client.client_status)}
+        </Badge>
+      </TableCell>
+    </TableRow>
+  ))}
+</TableBody>
+
         </Table>
       </div>
     </div>

@@ -101,21 +101,42 @@
 
     useEffect(() => {
       const fetchClients = async () => {
-        const { data, error } = await supabase.from("Clients") .select(`
-          *,
-          category:category_id (category_name)
-        `);
+        const { data, error } = await supabase
+          .from("Clients")
+          .select(`
+            *,
+            category:category_id (category_name),
+            agreements(end_date)
+          `);
+      
         if (error) {
           console.error("Error fetching clients:", error);
         } else {
-          console.log("Fetched clients:", data);
-          setClients(data);
-          console.log("Clients state after fetch:", data);  // Add this log
+          const today = new Date();
+      
+          const enrichedClients = data.map((client: any) => {
+            const latestAgreement = client.agreements?.sort((a: any, b: any) =>
+              new Date(b.end_date).getTime() - new Date(a.end_date).getTime()
+            )[0];
+      
+            const agreementIsExpired = latestAgreement
+              ? new Date(latestAgreement.end_date) < today
+              : true;
+      
+            return {
+              ...client,
+              isAgreementExpired: agreementIsExpired,
+            };
+          });
+      
+          setClients(enrichedClients);
         }
-      };
+      };      
     
       fetchClients();
     }, []);
+
+    
     
 
 
@@ -200,8 +221,8 @@
     
     // Filter logic using sanitizeValue for consistent handling of missing or default values
     const filteredClients = clients.filter((client) => {
-      // First filter by active/inactive status
-      if (sanitizeValue(client.client_status) !== sanitizeValue(status)) return false;
+      if (status === "active" && (client.isAgreementExpired || client.client_status !== "active")) return false;
+      if (status === "inactive" && (!client.isAgreementExpired && client.client_status === "active")) return false;    
     
       // Then apply search term if present
       if (
